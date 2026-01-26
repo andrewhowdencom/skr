@@ -38,3 +38,11 @@ skr registry login my-registry.com --username <user> --password <token>
 # Log out
 skr registry logout my-registry.com
 ```
+
+## Further Reading
+
+1. [anthropic/skills](https://github.com/anthropics/skills)
+1. [Codex Skills](https://developers.openai.com/codex/skills/)
+1. [Antigravity Skills](https://antigravity.google/docs/skills)
+1. [Agent Skills](https://agentskills.io/what-are-skills)
+
