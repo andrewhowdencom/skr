@@ -48,6 +48,7 @@ nav:
   - Home: index.md
   - Tutorials:
     - Getting Started: tutorials/getting-started.md
+    - Managing Projects: tutorials/managing-project.md
   - How-to Guides:
     - Manage Registry: how-to/manage-registry.md
     - Manage System: how-to/manage-system.md
