@@ -10,6 +10,24 @@ This allows for a standardized, versioned, and distributed ecosystem for sharing
 
 This allows for a standardized, versioned, and distributed ecosystem for sharing AI capabilities.
 
+## Installation
+ 
+You can install `skr` by downloading the pre-compiled binary from the [Releases page](https://github.com/andrewhowdencom/skr/releases).
+ 
+### Linux / macOS
+ 
+1. Download the archive for your platform.
+2. Extract the binary.
+3. Move it to a directory in your `PATH`.
+ 
+```bash
+# Example for macOS ARM64 (replace version and platform as needed)
+VERSION=v0.0.3
+wget https://github.com/andrewhowdencom/skr/releases/download/${VERSION}/skr_Darwin_arm64.tar.gz
+tar xvf skr_Darwin_arm64.tar.gz
+sudo mv skr /usr/local/bin/
+```
+ 
 ## GitHub Action
 
 Detailed documentation: [Monorepo Workflow Tutorial](docs/tutorials/monorepo-workflow.md)
