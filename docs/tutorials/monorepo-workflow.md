@@ -1,6 +1,6 @@
 # Tutorial: Automating Skill Updates in a Monorepo
 
-This guide explains how to manage a repository containing multiple skills (a "monorepo") and automate their deployment using GitHub Actions.
+This guide explains how to manage a repository containing multiple skills (a "monorepo") and automate their deployment using the official `skr` GitHub Action.
 
 ## Repository Structure
 
@@ -23,14 +23,14 @@ my-skills-repo/
 
 ## Automation Strategy
 
-To efficiently manage updates, we want to:
-1.  **Detect changes**: Only build skills that have been modified in the current push/PR.
-2.  **Build & Push**: Build the artifact and push it to a registry (e.g., GitHub Container Registry).
-3.  **Versioning**: Use the version defined in `SKILL.md` or git SHAs.
+To efficiently manage updates, we use `skr batch publish`. This command:
+1.  **Detects changes**: Checks which `skills/*` directories have changed since the last commit.
+2.  **Builds**: Creates OCI artifacts for modified skills.
+3.  **Pushes**: Uploads them to the registry.
 
 ## GitHub Action Workflow
 
-Here is a complete workflow that uses `dorny/paths-filter` to detect changes and a matrix strategy to build them.
+We provide a Docker-based GitHub Action that simplifies this process significantly. You don't need to write complex scripts or matrix strategies.
 
 ### `.github/workflows/deploy-skills.yaml`
 
@@ -48,99 +48,40 @@ env:
   NAMESPACE: ${{ github.repository_owner }}
 
 jobs:
-  detect-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      skills: ${{ steps.filter.outputs.changes }}
-    steps:
-      - uses: actions/checkout@v4
-      
-      # Detect which folders under skills/ have changed
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            git: skills/git/**
-            docker: skills/docker/**
-            text-utils: skills/text-utils/**
-            # Note: For dynamic discovery, you might need a custom script step 
-            # instead of hardcoding filters if you have many skills.
-
-  build-and-push:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.skills != '[]'
+  publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    strategy:
-      matrix:
-        skill: ${{ fromJSON(needs.detect-changes.outputs.skills) }}
-        
+
     steps:
     - uses: actions/checkout@v4
-    
-    # Install skr using the official action
-    - uses: andrewhowdencom/skr@main
-        
-    - name: Log in to the Container registry
-      uses: docker/login-action@v3
+      with:
+        fetch-depth: 0 # Required for change detection
+
+    - name: Publish Skills
+      uses: andrewhowdencom/skr@main
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Build and Push
-      run: |
-        SKILL_NAME=${{ matrix.skill }}
-        SKILL_PATH="skills/${SKILL_NAME}"
-        
-        # Read version from SKILL.md (optional, requires yq)
-        # VERSION=$(yq '.version' ${SKILL_PATH}/SKILL.md)
-        
-        # Or use Git SHA for immutable tags
-        VERSION="sha-$(git rev-parse --short HEAD)"
-        
-        TAG="${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${SKILL_NAME}:${VERSION}"
-        LATEST="${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${SKILL_NAME}:latest"
-        
-        echo "Building $TAG..."
-        
-        # Login to skr registry (wraps docker/login or uses keyring)
-        # For CI, we can use the --password-stdin method if needed, 
-        # or rely on docker-credential-helpers file if skr supports it.
-        # Since 'skr registry login' sets up the keyring, in CI we might need a 
-        # simpler auth method or just reuse the docker config if `oras` supports it.
-        # Currently skr uses its own keyring.
-        
-        echo "${{ secrets.GITHUB_TOKEN }}" | skr registry login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-        
-        skr build "${SKILL_PATH}" --tag "$TAG"
-        skr registry tag "$TAG" "$LATEST" # Requires 'skr tag' command
-        
-        skr push "$TAG"
-        skr push "$LATEST"
+        namespace: ${{ env.NAMESPACE }}
+        base: ${{ github.event.before }}
+        path: ./skills
 ```
 
-> **Note**: This workflow assumes you list your skills in the `paths-filter` step. For a fully dynamic approach (scanning the directory), you would replace the `detect-changes` job with a script that outputs a JSON array of changed directory names.
+## How It Works
 
-## Dynamic Discovery Script (Alternative)
+1.  **Change Detection**: The action (via `skr batch publish`) compares the current commit against `base` (the previous commit `github.event.before`) to find modified skills.
+2.  **Build & Push**: It automatically builds and pushes artifacts for changed skills to the registry.
 
-If you have many skills and don't want to update the YAML for every new one:
+## Manual Publishing
+
+You can also run this locally using the CLI:
 
 ```bash
-# Get list of changed files
-CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
-
-# Extract unique skill directories
-SKILLS=$(echo "$CHANGED_FILES" | grep '^skills/' | cut -d/ -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
-
-echo "skills=$SKILLS" >> $GITHUB_OUTPUT
+skr batch publish ./skills \
+  --registry ghcr.io \
+  --namespace myuser \
+  --base origin/main
 ```
-
-## Summary
-
-1.  Structure your repo with isolated skill folders.
-2.  Use a GitHub Action to detect changes.
-3.  Use `matrix` strategy to parallelize builds.
-4.  Push tagged artifacts to GHCR.

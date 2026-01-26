@@ -22,6 +22,19 @@ Remove a skill from the current project configuration.
 ### `skr sync`
 Synchronize the local`.agent/skills` directory with the `.skr.yaml` configuration.
 
+### `skr publish [path] --tag <tag>`
+Build a skill from a directory and immediately push it to a registry.
+-   **path**: Path to skill directory (default: `.`)
+-   **--tag, -t**: Registry reference (e.g., `ghcr.io/user/skill:v1`).
+
+### `skr batch publish [path]`
+Publish multiple skills from a monorepo structure.
+-   **path**: Root directory containing skills (default: `.`)
+-   **--registry**: Registry host (required).
+-   **--namespace**: Registry namespace (required).
+-   **--base**: Git reference for change detection (optional, e.g., `origin/main`).
+
+
 ---
 
 ## `skr registry`
