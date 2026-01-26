@@ -1,0 +1,43 @@
+name: Deploy Skills
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'skills/**'
+
+env:
+  REGISTRY: ghcr.io
+  NAMESPACE: ${{ github.repository_owner }}
+
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required for change detection
+
+    # Install skr using our own action
+    - uses: andrewhowdencom/skr@main
+        
+    - name: Log in to the Container registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Publish Changed Skills
+      run: |
+        # Login skr to the registry
+        echo "${{ secrets.GITHUB_TOKEN }}" | skr registry login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        
+        # Batch publish
+        skr batch publish ./skills \
+          --registry ${{ env.REGISTRY }} \
+          --namespace ${{ env.NAMESPACE }} \
+          --base ${{ github.event.before }}
