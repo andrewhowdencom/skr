@@ -11,10 +11,12 @@ import (
 const ConfigFileName = ".skr.yaml"
 
 type Config struct {
-	Agent struct {
-		Type string `yaml:"type"`
-	} `yaml:"agent"`
-	Skills []string `yaml:"skills"`
+	Agent  *AgentConfig `yaml:"agent,omitempty"`
+	Skills []string     `yaml:"skills"`
+}
+
+type AgentConfig struct {
+	Type string `yaml:"type"`
 }
 
 // Load looks for .skr.yaml in the directory dir (defaults to current dir)

@@ -10,22 +10,56 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/andrewhowdencom/skr/pkg/registry"
 	"github.com/andrewhowdencom/skr/pkg/skill"
 	"github.com/andrewhowdencom/skr/pkg/store"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // InstallSkill installs a skill from the store to the installDir.
-// Returns the name of the installed skill.
+// It attempts to pull from remote if missing locally or if requested (implicit latest).
 func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string) (string, error) {
-	// 1. Resolve Reference
+	// 1. Resolve Reference locally
 	desc, err := st.Resolve(ctx, ref)
+	shouldPull := false
+
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve skill '%s': %w", ref, err)
+		// Not found locally?
+		shouldPull = true
+	} else {
+		// Found locally. Check if we should update.
+		// For MVP, if tag is "latest", we assume we should pull?
+		// Or maybe we treat it as immutable unless --update is passed?
+		// User requested: "for :latest... pulling it first".
+		// Naive check for :latest suffix.
+		// NOTE: 'ref' might be fully qualified or short.
+		if len(ref) > 7 && ref[len(ref)-7:] == ":latest" {
+			shouldPull = true
+		}
+	}
+
+	if shouldPull {
+		fmt.Printf("Pulling %s...\n", ref)
+		if err := registry.Pull(ctx, st, ref); err != nil {
+			// If pull fails:
+			// 1. If we have local copy, maybe warn and use it?
+			// 2. If no local copy, fail.
+			if desc.Digest != "" { // We had a local copy
+				fmt.Printf("Warning: Failed to pull latest (using local copy): %v\n", err)
+			} else {
+				return "", fmt.Errorf("failed to pull %s: %w", ref, err)
+			}
+		} else {
+			// Re-resolve after pull to get new descriptor
+			desc, err = st.Resolve(ctx, ref)
+			if err != nil {
+				return "", fmt.Errorf("failed to resolve %s after pull: %w", ref, err)
+			}
+		}
 	}
 
 	// 2. Fetch Manifest
-	manifestReader, err := st.Get(ctx, desc)
+	manifestReader, err := st.Fetch(ctx, desc)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch manifest: %w", err)
 	}
@@ -48,7 +82,7 @@ func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string) 
 	layerDesc := manifest.Layers[0]
 
 	// 3. Fetch Layer
-	layerReader, err := st.Get(ctx, layerDesc)
+	layerReader, err := st.Fetch(ctx, layerDesc)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch layer: %w", err)
 	}
