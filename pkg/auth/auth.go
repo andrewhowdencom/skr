@@ -4,14 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
+	"os"
+	"path/filepath"
 
+	"github.com/adrg/xdg"
 	"github.com/zalando/go-keyring"
 	"oras.land/oras-go/v2/registry/remote/auth"
 )
 
 const (
-	ServiceName = "skr"
+	ServiceName  = "skr"
+	AuthFileName = "auth.json"
 )
 
 // Store implements credentials.Store
@@ -21,7 +24,7 @@ func NewStore() *Store {
 	return &Store{}
 }
 
-// Get retrieves credentials from the keyring.
+// Get retrieves credentials from the keyring or fallback file.
 func (s *Store) Get(ctx context.Context, serverAddress string) (auth.Credential, error) {
 	u, p, err := GetCredentials(serverAddress)
 	if err != nil {
@@ -33,12 +36,12 @@ func (s *Store) Get(ctx context.Context, serverAddress string) (auth.Credential,
 	}, nil
 }
 
-// Put stores credentials in the keyring.
+// Put stores credentials in the keyring or fallback file.
 func (s *Store) Put(ctx context.Context, serverAddress string, credential auth.Credential) error {
 	return Login(serverAddress, credential.Username, credential.Password)
 }
 
-// Delete removes credentials from the keyring.
+// Delete removes credentials.
 func (s *Store) Delete(ctx context.Context, serverAddress string) error {
 	return Logout(serverAddress)
 }
@@ -49,26 +52,12 @@ type AuthConfig struct {
 	Password string
 }
 
-// Config is a map of registry -> AuthConfig.
-// We still need to load *all* configs to find the right one if we scan.
-// But keyring usually stores by (service, user).
-// Standard pattern: Service="skr", User="<registry>".
-// Password payload contains JSON with actual username/password?
-// OR Service="skr", User="<registry>/<username>"?
-// Docker cred helpers use the registry as the "ServerURL".
-//
-// For simplicity and standard keyring usage:
-// Service: "skr"
-// User: <registry_domain> (e.g. "ghcr.io")
-// Password: <json_blob_of_creds> OR just the password/token?
-// If we just store password, we lose the username.
-// So we should store a JSON blob as the "Password"/Secret in the keyring.
 type CredentialPayload struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-// Login stores credentials for a registry in the keyring.
+// Login stores credentials. Tries keyring first, falls back to file.
 func Login(registry, username, password string) error {
 	payload := CredentialPayload{
 		Username: username,
@@ -80,44 +69,138 @@ func Login(registry, username, password string) error {
 		return fmt.Errorf("failed to marshal credential payload: %w", err)
 	}
 
-	// Service: skr
-	// User: registry (e.g. ghcr.io)
-	// Secret: JSON(user, pass)
+	// Try keyring
 	if err := keyring.Set(ServiceName, registry, string(data)); err != nil {
-		return fmt.Errorf("failed to save credentials to keyring: %w", err)
+		// Log warning?
+		// Fallback to file
+		return saveToAuthFile(registry, payload)
 	}
 	return nil
 }
 
-// Logout removes credentials for a registry from the keyring.
+// Logout removes credentials.
 func Logout(registry string) error {
-	if err := keyring.Delete(ServiceName, registry); err != nil {
-		if strings.Contains(err.Error(), "not found") { // naive check, error types vary by platform
-			return fmt.Errorf("not logged in to %s", registry)
-		}
-		return fmt.Errorf("failed to delete credentials: %w", err)
+	// Try deleting from keyring
+	errKeyring := keyring.Delete(ServiceName, registry)
+
+	// Try deleting from file
+	errFile := deleteFromAuthFile(registry)
+
+	// If neither worked, return error (prioritizing keyring error if it's not just "not found")
+	if errKeyring != nil && errFile != nil {
+		// Simplification: just return one
+		return fmt.Errorf("failed to logout (keyring: %v, file: %v)", errKeyring, errFile)
 	}
 	return nil
 }
 
-// GetCredentials retrieves credentials for a registry.
+// GetCredentials retrieves credentials.
 func GetCredentials(registry string) (string, string, error) {
+	// 1. Try keyring
 	data, err := keyring.Get(ServiceName, registry)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to get credentials for %s: %w", registry, err)
+	if err == nil {
+		var payload CredentialPayload
+		if err := json.Unmarshal([]byte(data), &payload); err == nil {
+			return payload.Username, payload.Password, nil
+		}
 	}
 
-	var payload CredentialPayload
-	if err := json.Unmarshal([]byte(data), &payload); err != nil {
-		return "", "", fmt.Errorf("failed to parse credential payload: %w", err)
+	// 2. Try auth file
+	payload, err := getFromAuthFile(registry)
+	if err == nil {
+		return payload.Username, payload.Password, nil
 	}
 
-	return payload.Username, payload.Password, nil
+	return "", "", fmt.Errorf("credentials not found for %s", registry)
 }
 
-// LoadConfig returns a map representation for compatibility,
-// though iterating keyring items isn't always supported across all backends easily.
-// For our use case (Push/Pull), we usually know the registry we are targeting.
-// ORAS might want a resolver.
-// The registry wrapper (pkg/registry) handles this.
-// We don't strictly need to list all auths.
+// File-based backup helpers
+
+func getAuthFilePath() (string, error) {
+	return xdg.ConfigFile(filepath.Join("skr", AuthFileName))
+}
+
+func loadAuthFile() (map[string]CredentialPayload, error) {
+	path, err := getAuthFilePath()
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return make(map[string]CredentialPayload), nil
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var auths map[string]CredentialPayload
+	if err := json.Unmarshal(data, &auths); err != nil {
+		return nil, err
+	}
+	return auths, nil
+}
+
+func saveToAuthFile(registry string, payload CredentialPayload) error {
+	auths, err := loadAuthFile()
+	if err != nil {
+		return err
+	}
+
+	auths[registry] = payload
+
+	data, err := json.MarshalIndent(auths, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	path, err := getAuthFilePath()
+	if err != nil {
+		return err
+	}
+
+	// Ensure directory exists (xdg.ConfigFile might do this, but safe to check)
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0600) // Secure permissions
+}
+
+func deleteFromAuthFile(registry string) error {
+	auths, err := loadAuthFile()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := auths[registry]; !ok {
+		return fmt.Errorf("not found in auth file")
+	}
+
+	delete(auths, registry)
+
+	data, err := json.MarshalIndent(auths, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	path, err := getAuthFilePath()
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0600)
+}
+
+func getFromAuthFile(registry string) (CredentialPayload, error) {
+	auths, err := loadAuthFile()
+	if err != nil {
+		return CredentialPayload{}, err
+	}
+
+	if payload, ok := auths[registry]; ok {
+		return payload, nil
+	}
+	return CredentialPayload{}, fmt.Errorf("not found")
+}
