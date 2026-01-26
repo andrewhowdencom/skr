@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/andrewhowdencom/skr/pkg/skill"
 	"github.com/andrewhowdencom/skr/pkg/store"
@@ -42,7 +44,14 @@ If [path] is not provided, defaults to the current directory.`,
 			return fmt.Errorf("failed to initialize store: %w", err)
 		}
 
-		if err := st.Build(ctx, s.Path, buildTag); err != nil {
+		// Detect Git Remote for source annotation
+		annotations := make(map[string]string)
+		if sourceURL, err := getGitRemoteURL(); err == nil && sourceURL != "" {
+			annotations["org.opencontainers.image.source"] = sourceURL
+			fmt.Printf("Detected git source: %s\n", sourceURL)
+		}
+
+		if err := st.Build(ctx, s.Path, buildTag, annotations); err != nil {
 			return fmt.Errorf("failed to build artifact: %w", err)
 		}
 
@@ -56,4 +65,24 @@ If [path] is not provided, defaults to the current directory.`,
 func init() {
 	rootCmd.AddCommand(buildCmd)
 	buildCmd.Flags().StringVarP(&buildTag, "tag", "t", "", "Tag for the built artifact (e.g., registry.com/skill:v1)")
+}
+
+func getGitRemoteURL() (string, error) {
+	cmd := exec.Command("git", "config", "--get", "remote.origin.url")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	url := strings.TrimSpace(string(out))
+	// Convert SSH URL to HTTPS if needed? GitHub packages supports both but HTTPS is standard for source linking?
+	// Actually GHCR works with repo URL.
+	// git@github.com:user/repo.git -> https://github.com/user/repo
+	if strings.HasPrefix(url, "git@github.com:") {
+		url = strings.Replace(url, "git@github.com:", "https://github.com/", 1)
+		url = strings.TrimSuffix(url, ".git")
+	} else if strings.HasPrefix(url, "https://github.com/") {
+		url = strings.TrimSuffix(url, ".git")
+	}
+
+	return url, nil
 }

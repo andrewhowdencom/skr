@@ -11,10 +11,12 @@ import (
 const ConfigFileName = ".skr.yaml"
 
 type Config struct {
-	Agent struct {
-		Type string `yaml:"type"`
-	} `yaml:"agent"`
-	Skills []string `yaml:"skills"`
+	Agent  *AgentConfig `yaml:"agent,omitempty"`
+	Skills []string     `yaml:"skills"`
+}
+
+type AgentConfig struct {
+	Type string `yaml:"type"`
 }
 
 // Load looks for .skr.yaml in the directory dir (defaults to current dir)
@@ -48,4 +50,27 @@ func Load(dir string) (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// Save persists the config to .skr.yaml in dir
+func (c *Config) Save(dir string) error {
+	if dir == "" {
+		d, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current working directory: %w", err)
+		}
+		dir = d
+	}
+
+	data, err := yaml.Marshal(c)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	configPath := filepath.Join(dir, ConfigFileName)
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write %s: %w", ConfigFileName, err)
+	}
+
+	return nil
 }

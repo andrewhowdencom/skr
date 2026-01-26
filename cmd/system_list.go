@@ -8,12 +8,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var imagesCmd = &cobra.Command{
-	Use:   "images",
+var systemListCmd = &cobra.Command{
+	Use:   "list",
 	Short: "List built/pulled artifacts in Local Registry",
 	Long: `List all skill artifacts stored in the local OCI registry.
 	
-Analogous to 'docker images'. Shows repository, tag, digest, and size.`,
+Shows repository, tag, digest, and size.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		st, err := store.New("")
@@ -66,7 +66,7 @@ Analogous to 'docker images'. Shows repository, tag, digest, and size.`,
 }
 
 func init() {
-	rootCmd.AddCommand(imagesCmd)
+	systemCmd.AddCommand(systemListCmd)
 }
 
 func lastIndex(s, sep string) int {

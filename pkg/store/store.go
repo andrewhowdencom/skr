@@ -56,7 +56,7 @@ func New(path string) (*Store, error) {
 	}, nil
 }
 
-func (s *Store) Build(ctx context.Context, srcDir string, tag string) error {
+func (s *Store) Build(ctx context.Context, srcDir string, tag string, annotations map[string]string) error {
 	// 1. Create a tarball of the directory
 	buf := &bytes.Buffer{}
 	gw := gzip.NewWriter(buf)
@@ -145,10 +145,10 @@ func (s *Store) Build(ctx context.Context, srcDir string, tag string) error {
 	}
 
 	// 4. Create and push Manifest
-	// 4. Create and push Manifest
 	manifest := ocispec.Manifest{
-		Config: configDesc,
-		Layers: []ocispec.Descriptor{layerDesc},
+		Config:      configDesc,
+		Layers:      []ocispec.Descriptor{layerDesc},
+		Annotations: annotations,
 	}
 	manifest.SchemaVersion = 2
 
@@ -179,8 +179,8 @@ func (s *Store) Build(ctx context.Context, srcDir string, tag string) error {
 	return nil
 }
 
-// Get retrieves content by digest
-func (s *Store) Get(ctx context.Context, target ocispec.Descriptor) (io.ReadCloser, error) {
+// Fetch retrieves content by digest
+func (s *Store) Fetch(ctx context.Context, target ocispec.Descriptor) (io.ReadCloser, error) {
 	return s.oci.Fetch(ctx, target)
 }
 
@@ -284,6 +284,21 @@ func (s *Store) Prune(ctx context.Context) (int, int64, error) {
 
 // interface guard
 var _ content.Storage = &oci.Store{}
+
+// Exists checks if a target descriptor exists in the store
+func (s *Store) Exists(ctx context.Context, target ocispec.Descriptor) (bool, error) {
+	return s.oci.Exists(ctx, target)
+}
+
+// Push pushes content to the store
+func (s *Store) Push(ctx context.Context, desc ocispec.Descriptor, r io.Reader) error {
+	return s.oci.Push(ctx, desc, r)
+}
+
+// Tag aliases a descriptor with a reference
+func (s *Store) Tag(ctx context.Context, desc ocispec.Descriptor, reference string) error {
+	return s.oci.Tag(ctx, desc, reference)
+}
 
 // pushBlob pushes content if it doesn't already exist
 func (s *Store) pushBlob(ctx context.Context, desc ocispec.Descriptor, r io.Reader) error {
