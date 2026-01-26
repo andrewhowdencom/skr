@@ -19,5 +19,5 @@ dependencies, version, and manifest.`,
 }
 
 func init() {
-	rootCmd.AddCommand(inspectCmd)
+	systemCmd.AddCommand(inspectCmd)
 }

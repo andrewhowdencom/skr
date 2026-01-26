@@ -62,9 +62,39 @@ func ListInstalledSkills(startDir string) ([]InstalledSkill, error) {
 		}
 	}
 
-	// 2. Global Skills (Placeholder for now)
-	// globalDir := ...
-	// merge...
+	// 2. Global Skills
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		globalDir := filepath.Join(homeDir, ".config", "agent", "skills")
+		entries, err := os.ReadDir(globalDir)
+		if err == nil {
+			for _, entry := range entries {
+				if entry.IsDir() {
+					skillPath := filepath.Join(globalDir, entry.Name())
+					s, err := skill.Load(skillPath)
+					if err == nil {
+						// Check if overridden by local
+						overridden := false
+						for _, local := range skills {
+							if local.Name == s.Name {
+								overridden = true
+								break
+							}
+						}
+
+						if !overridden {
+							skills = append(skills, InstalledSkill{
+								Name:     s.Name,
+								Path:     skillPath,
+								Version:  "valid", // TODO: Version parsing
+								IsGlobal: true,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
 
 	return skills, nil
 }

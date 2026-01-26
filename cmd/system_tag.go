@@ -18,5 +18,5 @@ This is mostly used to prepare a built skill for pushing to a specific registry.
 }
 
 func init() {
-	rootCmd.AddCommand(tagCmd)
+	systemCmd.AddCommand(tagCmd)
 }
