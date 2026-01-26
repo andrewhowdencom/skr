@@ -31,6 +31,11 @@ If [path] is not provided, defaults to the current directory.`,
 			return fmt.Errorf("failed to validate skill: %w", err)
 		}
 
+		if buildTag == "" {
+			buildTag = fmt.Sprintf("%s:latest", s.Name)
+			fmt.Printf("No tag provided. Defaulting to: %s\n", buildTag)
+		}
+
 		ctx := cmd.Context()
 		st, err := store.New("")
 		if err != nil {
@@ -42,9 +47,7 @@ If [path] is not provided, defaults to the current directory.`,
 		}
 
 		fmt.Printf("Successfully built artifact for skill '%s'\n", s.Name)
-		if buildTag != "" {
-			fmt.Printf("Tagged as: %s\n", buildTag)
-		}
+		fmt.Printf("Tagged as: %s\n", buildTag)
 
 		return nil
 	},
