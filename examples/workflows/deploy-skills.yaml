@@ -10,6 +10,7 @@ env:
   REGISTRY: ghcr.io
   NAMESPACE: ${{ github.repository_owner }}
 
+jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
