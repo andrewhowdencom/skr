@@ -1,26 +1,28 @@
-name: 'Setup skr'
-description: 'Install the skr CLI'
+name: 'Publish Agent Skills'
+description: 'Build and publish Agent Skills to an OCI registry'
 inputs:
-  version:
-    description: 'Version of skr to install'
+  registry:
+    description: 'Registry host (e.g. ghcr.io)'
+    required: true
+  username:
+    description: 'Registry username'
+    required: true
+  password:
+    description: 'Registry password or token'
+    required: true
+  namespace:
+    description: 'Registry namespace (e.g. user or org)'
+    required: true
+  path:
+    description: 'Path to skills directory'
     required: false
-    default: 'latest'
+    default: '.'
+  base:
+    description: 'Git reference for change detection'
+    required: false
 branding:
   icon: 'package'
   color: 'blue'
 runs:
-  using: "composite"
-  steps:
-    - shell: bash
-      run: |
-        VERSION="${{ inputs.version }}"
-        if [ "$VERSION" = "latest" ]; then
-          URL="https://github.com/andrewhowdencom/skr/releases/latest/download/skr_linux_amd64.tar.gz"
-        else
-          URL="https://github.com/andrewhowdencom/skr/releases/download/${VERSION}/skr_linux_amd64.tar.gz"
-        fi
-        
-        echo "Installing skr from $URL..."
-        curl -L "$URL" | tar xz
-        sudo mv skr /usr/local/bin/
-        skr --version
+  using: 'docker'
+  image: 'Dockerfile'

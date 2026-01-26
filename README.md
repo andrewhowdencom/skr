@@ -8,7 +8,34 @@ The primary goal of **skr** is to enable the pushing, pulling, and maintenance o
 
 This allows for a standardized, versioned, and distributed ecosystem for sharing AI capabilities.
 
-## Usage
+This allows for a standardized, versioned, and distributed ecosystem for sharing AI capabilities.
+
+## GitHub Action
+
+Detailed documentation: [Monorepo Workflow Tutorial](docs/tutorials/monorepo-workflow.md)
+
+Use `skr` in your CI/CD pipelines to automatically build and publish skills:
+
+```yaml
+steps:
+  - uses: actions/checkout@v4
+    with:
+      fetch-depth: 0 # Required for change detection
+
+  - name: Publish Skills
+    uses: andrewhowdencom/skr@main
+    with:
+      registry: ghcr.io
+      username: ${{ github.actor }}
+      password: ${{ secrets.GITHUB_TOKEN }}
+      namespace: ${{ github.repository_owner }}
+      # Optional: path to skills directory (default: .)
+      path: ./skills
+      # Optional: git ref for change detection (default: none)
+      base: ${{ github.event.before }}
+```
+
+## CLI Usage
 
 ### Basic Commands
 
