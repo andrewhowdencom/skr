@@ -1,0 +1,42 @@
+name: Publish Skills
+
+# This workflow builds and publishes Agent Skills to the GitHub Container Registry (GHCR).
+# It is triggered on pushes to the main branch that affect the 'skills/' directory.
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'skills/**' # Only trigger when files in skills/ change
+
+env:
+  REGISTRY: ghcr.io
+  NAMESPACE: ${{ github.repository_owner }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Required to push to GHCR
+
+    steps:
+    # Checkout the repository
+    # fetch-depth: 0 is CRITICAL for 'skr' to perform change detection against the previous commit.
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # Publish the skills using the 'skr' action.
+    # In this repository, we use the local action definition check out in the root (./).
+    # For other repositories, you would use: uses: andrewhowdencom/skr@main
+    - name: Publish Skills
+      uses: ./
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }} # Automatically provided by GitHub Actions
+        namespace: ${{ env.NAMESPACE }}
+        repository: ${{ github.event.repository.name }} # Optional: Scopes packages to this repo
+        path: skills # The directory containing the skills
+        base: ${{ github.event.before }} # The commit SHA before the push, for change detection

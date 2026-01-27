@@ -1,3 +1,16 @@
+# .skr.yaml Configuration File
+# This file serves as the source of truth for the Agent Skills installed in this workspace.
+
 skills:
-    - ghcr.io/andrewhowdencom/skills.git:latest
-    - ghcr.io/andrewhowdencom/skills.go:3fe18f2
+  # Reference to a remote skill (Standard OCI reference)
+  # Format: registry/namespace/repository:tag
+  
+  # Skills for this repository:
+  # These are the skills that are "installed" in this workspace for the agent to use.
+  
+  # A skill provides a set of capabilities and instructions for the agent.
+  # For example, a "builder" skill might teach the agent how to build other skills.
+  - ghcr.io/andrewhowdencom/skills.git:latest
+  
+  # You can also pin skills to specific versions or digests for reproducibility.
+  - ghcr.io/andrewhowdencom/skills.go:3fe18f2

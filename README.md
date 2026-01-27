@@ -12,6 +12,23 @@ This allows for a standardized, versioned, and distributed ecosystem for sharing
 
 This allows for a standardized, versioned, and distributed ecosystem for sharing AI capabilities.
 
+## Agent Skills
+
+by default, `skr` uses the [Agent Skill](https://agentskills.io) standard to extend its capabilities.
+
+This repository includes two core skills that also serve as the **canonical examples** for how to build and maintain skills:
+
+*   [**builder**](skills/builder/SKILL.md): Instructions on how to build, test, and maintain Agent Skills.
+*   [**skr**](skills/skr/SKILL.md): Instructions on how to use the `skr` CLI tool.
+
+### Examples
+
+Since `skr` is self-hosting, the best examples are the files in this repository:
+
+*   **Skill Structure**: See `skills/builder/SKILL.md`
+*   **Workflow**: See `.github/workflows/publish-skills.yaml` for a production-ready GitHub Actions workflow to publish skills.
+*   **Configuration**: See `.skr.yaml` for an extensively documented configuration example.
+
 ## Installation
  
 You can install `skr` by downloading the pre-compiled binary from the [Releases page](https://github.com/andrewhowdencom/skr/releases).

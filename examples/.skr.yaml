@@ -1,9 +1,0 @@
-# Example skr configuration file
-# This file serves as the source of truth for the agent's context in this directory.
-
-skills:
-  # Reference to a remote skill (Standard OCI reference)
-  - "ghcr.io/owner/example-skill:latest"
-  
-  # You can list multiple skills here
-  # - "ghcr.io/another-owner/another-skill:v1.0.0"
