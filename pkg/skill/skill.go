@@ -12,9 +12,14 @@ import (
 
 // Skill represents the metadata and structure of an Agent Skill
 type Skill struct {
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
-	Path        string `yaml:"-"` // Local path to the skill directory
+	Name         string   `yaml:"name"`
+	Description  string   `yaml:"description"`
+	Dependencies []string `yaml:"dependencies,omitempty"`
+	Metadata     struct {
+		Author  string `yaml:"author,omitempty"`
+		Version string `yaml:"version,omitempty"`
+	} `yaml:"metadata,omitempty"`
+	Path string `yaml:"-"` // Local path to the skill directory
 }
 
 const (

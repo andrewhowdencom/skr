@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -34,8 +35,13 @@ If [path] is not provided, defaults to the current directory.`,
 		}
 
 		if buildTag == "" {
-			buildTag = fmt.Sprintf("%s:latest", s.Name)
-			fmt.Printf("No tag provided. Defaulting to: %s\n", buildTag)
+			if s.Metadata.Author != "" && s.Metadata.Version != "" {
+				buildTag = fmt.Sprintf("%s/%s:%s", s.Metadata.Author, s.Name, s.Metadata.Version)
+				fmt.Printf("No tag provided. Using metadata: %s\n", buildTag)
+			} else {
+				buildTag = fmt.Sprintf("%s:latest", s.Name)
+				fmt.Printf("No tag provided. Defaulting to: %s\n", buildTag)
+			}
 		}
 
 		ctx := cmd.Context()
@@ -49,6 +55,23 @@ If [path] is not provided, defaults to the current directory.`,
 		if sourceURL, err := getGitRemoteURL(); err == nil && sourceURL != "" {
 			annotations["org.opencontainers.image.source"] = sourceURL
 			fmt.Printf("Detected git source: %s\n", sourceURL)
+		}
+
+		// Add Metadata Annotations
+		if s.Metadata.Author != "" {
+			annotations["com.skr.author"] = s.Metadata.Author
+		}
+		if s.Metadata.Version != "" {
+			annotations["com.skr.version"] = s.Metadata.Version
+		}
+
+		// Add Dependencies Annotation
+		if len(s.Dependencies) > 0 {
+			depsJSON, err := json.Marshal(s.Dependencies)
+			if err != nil {
+				return fmt.Errorf("failed to marshal dependencies: %w", err)
+			}
+			annotations["com.skr.dependencies"] = string(depsJSON)
 		}
 
 		if err := st.Build(ctx, s.Path, buildTag, annotations); err != nil {

@@ -11,14 +11,40 @@ import (
 	"path/filepath"
 
 	"github.com/andrewhowdencom/skr/pkg/registry"
+	"github.com/andrewhowdencom/skr/pkg/resolution"
 	"github.com/andrewhowdencom/skr/pkg/skill"
 	"github.com/andrewhowdencom/skr/pkg/store"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
-// InstallSkill installs a skill from the store to the installDir.
-// It attempts to pull from remote if missing locally or if requested (implicit latest).
+// InstallSkill installs a skill and its dependencies from the store to the installDir.
 func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string) (string, error) {
+	// 1. Resolve all dependencies
+	resolver := resolution.New(st)
+	refs, err := resolver.Resolve(ctx, ref)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve dependencies for %s: %w", ref, err)
+	}
+
+	var rootName string
+
+	// 2. Install each skill (sequentially for now)
+	for i, r := range refs {
+		name, err := installOne(ctx, st, r, installDir)
+		if err != nil {
+			return "", fmt.Errorf("failed to install %s: %w", r, err)
+		}
+
+		// The first one in the resolved list is the root skill (BFS start)
+		if i == 0 {
+			rootName = name
+		}
+	}
+
+	return rootName, nil
+}
+
+func installOne(ctx context.Context, st *store.Store, ref, installDir string) (string, error) {
 	// 1. Resolve Reference locally
 	desc, err := st.Resolve(ctx, ref)
 	shouldPull := false
