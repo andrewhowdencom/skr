@@ -20,7 +20,13 @@ import (
 // InstallSkill installs a skill and its dependencies from the store to the installDir.
 func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string) (string, error) {
 	// 1. Resolve all dependencies
+	// 1. Resolve all dependencies
 	resolver := resolution.New(st)
+	resolver.SetPuller(func(ctx context.Context, ref string) error {
+		fmt.Printf("Pulling missing dependency %s...\n", ref)
+		return registry.Pull(ctx, st, ref)
+	})
+
 	refs, err := resolver.Resolve(ctx, ref)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve dependencies for %s: %w", ref, err)
