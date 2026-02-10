@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/andrewhowdencom/skr/pkg/store"
 	"github.com/andrewhowdencom/skr/pkg/ui"
+	"github.com/opencontainers/go-digest"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/spf13/cobra"
 )
@@ -33,10 +35,12 @@ var httpServeCmd = &cobra.Command{
 			return fmt.Errorf("failed to load embedded assets: %w", err)
 		}
 
+		// Use a local ServeMux to avoid global state issues
+		mux := http.NewServeMux()
 		fileServer := http.FileServer(http.FS(assets))
 
 		// 3. API Handler
-		http.HandleFunc("/api/skills", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/api/skills", func(w http.ResponseWriter, r *http.Request) {
 			// Scan OCI store on every request
 			tags, err := st.List(ctx)
 			if err != nil {
@@ -62,8 +66,6 @@ var httpServeCmd = &cobra.Command{
 
 			for _, tag := range tags {
 				// Parse Tag: repo:version
-				// If no colon, assume latest? (OCI spec usually implies a tag)
-				// Simple parsing: last colon is the separator
 				repo := tag
 				version := "latest"
 				if lastIdx := lastIndex(tag, ":"); lastIdx != -1 {
@@ -98,14 +100,13 @@ var httpServeCmd = &cobra.Command{
 					skillMap[repo] = &UISkill{
 						ID:          repo,
 						Name:        shortName,
-						Description: manifest.Annotations["com.skr.description"], // First one wins for desc
-						Author:      manifest.Annotations["com.skr.author"],      // First one wins for author
+						Description: manifest.Annotations["com.skr.description"],
+						Author:      manifest.Annotations["com.skr.author"],
 						Versions:    []SkillVersion{},
 					}
 				}
 
 				// Append Version
-				// If annotation version is present, use it, else use tag (which we parsed above)
 				displayVersion := version
 				if v := manifest.Annotations["com.skr.version"]; v != "" {
 					displayVersion = v
@@ -116,7 +117,7 @@ var httpServeCmd = &cobra.Command{
 					Tag:     tag,
 				})
 
-				// Update metadata if missing (e.g. if we processed a tag with empty metadata first)
+				// Update metadata if missing
 				if skillMap[repo].Description == "" {
 					skillMap[repo].Description = manifest.Annotations["com.skr.description"]
 				}
@@ -137,11 +138,99 @@ var httpServeCmd = &cobra.Command{
 			}
 		})
 
-		http.HandleFunc("/skills.json", func(w http.ResponseWriter, r *http.Request) {
+		// 4. OCI Registry Handlers (Manual Routing)
+		mux.HandleFunc("/v2/", func(w http.ResponseWriter, r *http.Request) {
+			// Always set API Version Header
+			w.Header().Set("Docker-Distribution-API-Version", "registry/2.0")
+
+			path := strings.TrimPrefix(r.URL.Path, "/v2/")
+
+			// 4.1 API Version Check
+			if path == "" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			// Parse path for blobs or manifests
+			// Format: <name>/blobs/<digest> OR <name>/manifests/<reference>
+			// We look for the LAST occurrence of "/blobs/" or "/manifests/" to split
+
+			if idx := strings.LastIndex(path, "/blobs/"); idx != -1 {
+				// BLOB FETCH
+				// name := path[:idx] (unused currently as content is CAS)
+				digestStr := path[idx+len("/blobs/"):]
+
+				d := v1.Descriptor{
+					Digest: digest.Digest(digestStr),
+				}
+
+				rc, err := st.Fetch(ctx, d)
+				if err != nil {
+					http.Error(w, fmt.Sprintf("Blob not found: %s", digestStr), http.StatusNotFound)
+					return
+				}
+				defer rc.Close()
+
+				if _, err := io.Copy(w, rc); err != nil {
+					fmt.Printf("Error serving blob: %v\n", err)
+				}
+				return
+			} else if idx := strings.LastIndex(path, "/manifests/"); idx != -1 {
+				// MANIFEST FETCH
+				name := path[:idx]
+				ref := path[idx+len("/manifests/"):]
+
+				var desc v1.Descriptor
+				var err error
+
+				if strings.HasPrefix(ref, "sha256:") {
+					// Reference is a digest
+					// Try to resolve using digest itself if supported, or rely on fetch
+					desc = v1.Descriptor{
+						Digest: digest.Digest(ref),
+					}
+					// Attempt resolve to get MediaType
+					if resolved, err := st.Resolve(ctx, ref); err == nil {
+						desc = resolved
+					}
+				} else {
+					// Reference is a tag
+					fullRef := name + ":" + ref
+					desc, err = st.Resolve(ctx, fullRef)
+				}
+
+				if err != nil {
+					http.Error(w, fmt.Sprintf("Manifest not found: %s", ref), http.StatusNotFound)
+					return
+				}
+
+				rc, err := st.Fetch(ctx, desc)
+				if err != nil {
+					http.Error(w, "Failed to fetch manifest content", http.StatusInternalServerError)
+					return
+				}
+				defer rc.Close()
+
+				w.Header().Set("Content-Type", desc.MediaType)
+				w.Header().Set("Docker-Content-Digest", desc.Digest.String())
+				w.Header().Set("Content-Length", fmt.Sprintf("%d", desc.Size))
+
+				if _, err := io.Copy(w, rc); err != nil {
+					fmt.Printf("Error serving manifest: %v\n", err)
+				}
+				return
+			}
+
+			http.NotFound(w, r)
+		})
+
+		// 5. UI Redirect
+		mux.HandleFunc("/skills.json", func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/api/skills", http.StatusTemporaryRedirect)
 		})
 
-		http.Handle("/", fileServer)
+		// 6. UI Assets
+		mux.Handle("/", fileServer)
 
 		addr := fmt.Sprintf(":%d", port)
 		fmt.Printf("Serving Skills Registry (HTTP) at http://localhost%s\n", addr)
@@ -152,7 +241,7 @@ var httpServeCmd = &cobra.Command{
 		}
 		fmt.Println("Press Ctrl+C to stop")
 
-		if err := http.ListenAndServe(addr, nil); err != nil {
+		if err := http.ListenAndServe(addr, mux); err != nil {
 			return fmt.Errorf("server failed: %w", err)
 		}
 
