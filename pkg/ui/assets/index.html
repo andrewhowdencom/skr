@@ -51,6 +51,30 @@
             </div>
         </main>
     </div>
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="modal-backdrop">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h2 id="modal-title" class="modal-headline">Skill Name</h2>
+                <!-- Close icon/button could go here, for now relying on action button -->
+            </div>
+            <div id="modal-content" class="modal-body">
+                <p id="modal-desc" class="modal-text">Description goes here.</p>
+
+                <h3
+                    style="font-size:14px; font-weight:500; color:var(--md-sys-color-primary); margin-top:16px; margin-bottom:8px;">
+                    Installation</h3>
+                <div class="modal-code-block">
+                    <span id="install-cmd">skr install ...</span>
+                    <span class="material-symbols-outlined" style="cursor:pointer; font-size:18px;"
+                        onclick="copyInstallCmd()">content_copy</span>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-text" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
     <script src="app.js"></script>
 </body>
 

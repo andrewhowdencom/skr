@@ -146,6 +146,104 @@ header.top-app-bar {
     /* Row and column gap */
 }
 
+/* Modal */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-dialog {
+    background-color: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    border-radius: 28px;
+    padding: 24px;
+    width: 90%;
+    max-width: 560px;
+    box-shadow: var(--md-sys-elevation-3);
+    transform: scale(0.9);
+    transition: transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal-backdrop.open .modal-dialog {
+    transform: scale(1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-headline {
+    font-size: 24px;
+    font-weight: 400;
+    /* Regular */
+    line-height: 32px;
+}
+
+.modal-text {
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.modal-code-block {
+    background-color: var(--md-sys-color-surface-variant);
+    color: var(--md-sys-color-on-surface-variant);
+    padding: 16px;
+    border-radius: 12px;
+    font-family: monospace;
+    font-size: 14px;
+    overflow-x: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    color: var(--md-sys-color-primary);
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.btn-text:hover {
+    background-color: rgba(65, 95, 145, 0.08);
+    /* Primary with opacity */
+}
+
 /* Card */
 .card {
     background-color: var(--md-sys-color-surface);

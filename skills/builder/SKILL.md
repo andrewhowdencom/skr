@@ -1,6 +1,8 @@
 ---
 name: "builder"
 description: "A skill for building and maintaining Agent Skills."
+author: "Andrew Howden"
+version: "0.1.0"
 ---
 
 # Builder Skill
