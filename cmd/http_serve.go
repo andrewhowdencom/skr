@@ -92,6 +92,12 @@ var httpServeCmd = &cobra.Command{
 	},
 }
 
+func init() {
+	httpCmd.AddCommand(httpServeCmd)
+	httpServeCmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to listen on")
+	httpServeCmd.Flags().StringVar(&ociEndpoint, "oci-endpoint", "", "Remote OCI Registry endpoint to proxy (e.g. https://registry-1.docker.io)")
+}
+
 // newOCIHandler creates a handler for OCI registry endpoints
 func newOCIHandler(ctx context.Context, st *store.Store, proxy *httputil.ReverseProxy) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
