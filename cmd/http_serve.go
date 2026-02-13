@@ -11,15 +11,20 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/andrewhowdencom/skr/pkg/instrumentation"
 	"github.com/andrewhowdencom/skr/pkg/store"
 	"github.com/andrewhowdencom/skr/pkg/ui"
 	"github.com/opencontainers/go-digest"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
 )
 
 var port int
 var ociEndpoint string
+var traceProvider string
+var traceEndpoint string
 
 var httpServeCmd = &cobra.Command{
 	Use:   "serve",
@@ -33,9 +38,19 @@ var httpServeCmd = &cobra.Command{
 			return fmt.Errorf("cannot specify both --oci-path and --oci-endpoint")
 		}
 
+		// 0. Initialize Tracing
+		shutdown, err := instrumentation.InitTracer(ctx, "skr", traceProvider, traceEndpoint)
+		if err != nil {
+			return fmt.Errorf("failed to initialize tracer: %w", err)
+		}
+		defer func() {
+			if err := shutdown(context.Background()); err != nil {
+				fmt.Printf("Error shutting down tracer: %v\n", err)
+			}
+		}()
+
 		var st *store.Store
 		var proxy *httputil.ReverseProxy
-		var err error
 
 		// 1. Initialize Backend (Store or Proxy)
 		if ociEndpoint != "" {
@@ -50,6 +65,9 @@ var httpServeCmd = &cobra.Command{
 				originalDirector(req)
 				req.Host = targetURL.Host
 			}
+			// Instrument Proxy Transport
+			proxy.Transport = otelhttp.NewTransport(http.DefaultTransport)
+
 			fmt.Printf("Mode: Remote Proxy to %s\n", ociEndpoint)
 		} else {
 			st, err = store.New(ociPath)
@@ -74,17 +92,19 @@ var httpServeCmd = &cobra.Command{
 		fileServer := http.FileServer(http.FS(assets))
 
 		// 4. OCI Registry Handlers
-		// 4. OCI Registry Handlers
 		mux.HandleFunc("/v2/", newOCIHandler(ctx, st, proxy))
 
 		// 6. UI Assets
 		mux.Handle("/", fileServer)
 
+		// 7. Instrumentation
+		handler := otelhttp.NewHandler(mux, "server")
+
 		addr := fmt.Sprintf(":%d", port)
 		fmt.Printf("Serving Skills Registry (HTTP) at http://localhost%s\n", addr)
 		fmt.Println("Press Ctrl+C to stop")
 
-		if err := http.ListenAndServe(addr, mux); err != nil {
+		if err := http.ListenAndServe(addr, handler); err != nil {
 			return fmt.Errorf("server failed: %w", err)
 		}
 
@@ -96,10 +116,14 @@ func init() {
 	httpCmd.AddCommand(httpServeCmd)
 	httpServeCmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to listen on")
 	httpServeCmd.Flags().StringVar(&ociEndpoint, "oci-endpoint", "", "Remote OCI Registry endpoint to proxy (e.g. https://registry-1.docker.io)")
+	httpServeCmd.Flags().StringVar(&traceProvider, "trace-provider", "none", "Trace provider to use (stdout, otlp, none)")
+	httpServeCmd.Flags().StringVar(&traceEndpoint, "trace-endpoint", "", "Endpoint for the OTLP trace provider (e.g. localhost:4318)")
 }
 
 // newOCIHandler creates a handler for OCI registry endpoints
-func newOCIHandler(ctx context.Context, st *store.Store, proxy *httputil.ReverseProxy) http.HandlerFunc {
+func newOCIHandler(GlobalCtx context.Context, st *store.Store, proxy *httputil.ReverseProxy) http.HandlerFunc {
+	tracer := otel.Tracer("skr-oci-handler")
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		// CORS headers for UI
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -118,9 +142,26 @@ func newOCIHandler(ctx context.Context, st *store.Store, proxy *httputil.Reverse
 		}
 
 		// LOCAL MODE
-		w.Header().Set("Docker-Distribution-API-Version", "registry/2.0")
-
+		// Determine span name
 		path := strings.TrimPrefix(r.URL.Path, "/v2/")
+		spanName := "oci.unknown"
+		if path == "" {
+			spanName = "oci.base"
+		} else if path == "_catalog" {
+			spanName = "oci.catalog"
+		} else if strings.HasSuffix(path, "/tags/list") {
+			spanName = "oci.tags.list"
+		} else if strings.Contains(path, "/blobs/") {
+			spanName = "oci.blob.fetch"
+		} else if strings.Contains(path, "/manifests/") {
+			spanName = "oci.manifest.fetch"
+		}
+
+		// Start Span
+		ctx, span := tracer.Start(r.Context(), spanName)
+		defer span.End()
+
+		w.Header().Set("Docker-Distribution-API-Version", "registry/2.0")
 
 		// 4.1 API Version Check
 		if path == "" {

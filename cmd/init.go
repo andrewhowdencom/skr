@@ -27,9 +27,9 @@ directory structure for agent skills (e.g., .agent/skills).`,
 		}
 
 		// Check if config already exists
-		_, err = config.FindConfigFile(cwd)
+		existingConfig, err := config.FindConfigFile(cwd)
 		if err == nil {
-			return fmt.Errorf("configuration file already exists in %s or parent directories", cwd)
+			return fmt.Errorf("configuration file already exists at: %s", existingConfig)
 		}
 
 		// Create .agent/skills

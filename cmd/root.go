@@ -14,6 +14,8 @@ It simplifies the distribution of AI agent capabilities, treating them as versio
 artifacts similar to container images.`,
 
 	// RunE removed to allow default Cobra behavior (print help)
+	SilenceErrors: true,
+	SilenceUsage:  true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

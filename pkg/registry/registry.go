@@ -3,9 +3,11 @@ package registry
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	skrauth "github.com/andrewhowdencom/skr/pkg/auth"
 	"github.com/andrewhowdencom/skr/pkg/store"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
@@ -20,11 +22,23 @@ func Push(ctx context.Context, st *store.Store, ref string) error {
 		return fmt.Errorf("invalid reference %s: %w", ref, err)
 	}
 
+	// Instrument HTTP Client
+	// Chain: Client -> Retry -> OTel -> Network
+	// Retry client wraps the base transport. We want OTel to wrap the base transport
+	// so that each retry attempt is traced (if we want detailed view) or
+	// wrap the retry transport (if we want one span per logical operation).
+	// Here we wrap the base transport to see network calls.
+	baseTransport := otelhttp.NewTransport(http.DefaultTransport)
+	retryTransport := retry.NewTransport(baseTransport)
+	httpClient := &http.Client{
+		Transport: retryTransport,
+	}
+
 	// Find credentials for the registry
 	// ORAS client automatically uses the credential store helper if configured.
 	// We inject our custom store backed by keyring.
 	repo.Client = &auth.Client{
-		Client:     retry.DefaultClient,
+		Client:     httpClient,
 		Cache:      auth.DefaultCache,
 		Credential: credentials.Credential(skrauth.NewStore()), // Wraps Store into CredentialFunc
 	}
@@ -51,8 +65,14 @@ func Pull(ctx context.Context, st *store.Store, ref string) error {
 		return fmt.Errorf("invalid reference %s: %w", ref, err)
 	}
 
+	baseTransport := otelhttp.NewTransport(http.DefaultTransport)
+	retryTransport := retry.NewTransport(baseTransport)
+	httpClient := &http.Client{
+		Transport: retryTransport,
+	}
+
 	repo.Client = &auth.Client{
-		Client:     retry.DefaultClient,
+		Client:     httpClient,
 		Cache:      auth.DefaultCache,
 		Credential: credentials.Credential(skrauth.NewStore()),
 	}
