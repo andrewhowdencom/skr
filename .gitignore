@@ -31,6 +31,5 @@ go.work.sum
 # .idea/
 # .vscode/
 ./skr
-.agent/
 .skr/
 tests/fixtures/

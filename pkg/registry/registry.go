@@ -50,7 +50,13 @@ func Push(ctx context.Context, st *store.Store, ref string) error {
 	}
 
 	// 3. Copy from Local Store to Remote Repo
-	_, err = oras.Copy(ctx, st, ref, repo, ref, oras.DefaultCopyOptions)
+	// oras.Copy expects the target reference to be a tag or digest, not the full reference string.
+	dstRef := repo.Reference.Reference
+	if dstRef == "" {
+		dstRef = "latest"
+	}
+
+	_, err = oras.Copy(ctx, st, ref, repo, dstRef, oras.DefaultCopyOptions)
 	if err != nil {
 		return fmt.Errorf("failed to push %s: %w", ref, err)
 	}
@@ -79,7 +85,13 @@ func Pull(ctx context.Context, st *store.Store, ref string) error {
 
 	// 2. Copy from Remote Repo to Local Store
 	// We copy the tagged reference.
-	_, err = oras.Copy(ctx, repo, ref, st, ref, oras.DefaultCopyOptions)
+	// oras.Copy expects the source reference to be relative to the repository (i.e. the tag).
+	srcRef := repo.Reference.Reference
+	if srcRef == "" {
+		srcRef = "latest"
+	}
+
+	_, err = oras.Copy(ctx, repo, srcRef, st, ref, oras.DefaultCopyOptions)
 	if err != nil {
 		return fmt.Errorf("failed to pull %s: %w", ref, err)
 	}
