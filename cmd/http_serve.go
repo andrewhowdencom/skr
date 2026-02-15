@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/andrewhowdencom/skr/pkg/auth"
 	"github.com/andrewhowdencom/skr/pkg/instrumentation"
 	"github.com/andrewhowdencom/skr/pkg/store"
 	"github.com/andrewhowdencom/skr/pkg/ui"
@@ -23,6 +24,7 @@ import (
 
 var port int
 var ociEndpoint string
+var authFile string
 var traceProvider string
 var traceEndpoint string
 
@@ -66,7 +68,29 @@ var httpServeCmd = &cobra.Command{
 				req.Host = targetURL.Host
 			}
 			// Instrument Proxy Transport
-			proxy.Transport = otelhttp.NewTransport(http.DefaultTransport)
+			baseTransport := otelhttp.NewTransport(http.DefaultTransport)
+
+			// Setup Authentication Chain
+			var providers []auth.CredentialProvider
+
+			// 1. Explicit Auth File (Highest Priority)
+			if authFile != "" {
+				providers = append(providers, &auth.YAMLFileProvider{Path: authFile})
+			}
+
+			// 2. Default Auth File (~/.config/skr/authentication.yaml)
+			providers = append(providers, &auth.DefaultYAMLProvider{})
+
+			// 3. Keyring (from registry login)
+			providers = append(providers, &auth.KeyringProvider{})
+
+			// 4. Legacy Auth File (auth.json)
+			providers = append(providers, &auth.LegacyJSONProvider{})
+
+			chain := &auth.ChainProvider{Providers: providers}
+
+			// Wrap Transport with Auth
+			proxy.Transport = auth.NewAuthTransport(baseTransport, chain)
 
 			fmt.Printf("Mode: Remote Proxy to %s\n", ociEndpoint)
 		} else {
@@ -116,6 +140,7 @@ func init() {
 	httpCmd.AddCommand(httpServeCmd)
 	httpServeCmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to listen on")
 	httpServeCmd.Flags().StringVar(&ociEndpoint, "oci-endpoint", "", "Remote OCI Registry endpoint to proxy (e.g. https://registry-1.docker.io)")
+	httpServeCmd.Flags().StringVar(&authFile, "auth-file", "", "Path to a YAML file containing credentials")
 	httpServeCmd.Flags().StringVar(&traceProvider, "trace-provider", "none", "Trace provider to use (stdout, otlp, none)")
 	httpServeCmd.Flags().StringVar(&traceEndpoint, "trace-endpoint", "", "Endpoint for the OTLP trace provider (e.g. localhost:4318)")
 }

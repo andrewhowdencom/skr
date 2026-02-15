@@ -26,13 +26,34 @@ func NewStore() *Store {
 
 // Get retrieves credentials from the keyring or fallback file.
 func (s *Store) Get(ctx context.Context, serverAddress string) (auth.Credential, error) {
-	u, p, err := GetCredentials(serverAddress)
+	// Use the new providers
+	// We chain DefaultYAML -> Keyring -> LegacyJSON
+	chain := &ChainProvider{
+		Providers: []CredentialProvider{
+			&DefaultYAMLProvider{},
+			&KeyringProvider{},
+			&LegacyJSONProvider{},
+		},
+	}
+
+	cred, err := chain.Get(ctx, serverAddress)
 	if err != nil {
 		return auth.Credential{}, err
 	}
+
+	// Adapt to ORAS Credential
+	// ORAS auth.Credential only supports Username/Password or RefreshToken
+	// If we have a Token, we often map it to Password with empty username or similar,
+	// but ORAS specific auth logic might require specific handling.
+	// For now, map straightforwardly.
 	return auth.Credential{
-		Username: u,
-		Password: p,
+		Username: cred.Username,
+		Password: cred.Password,
+		// RefreshToken: cred.Token? ORAS uses Password for Bearer if Username is empty?
+		// Actually ORAS Credential struct has:
+		// Username, Password, RefreshToken, AccessToken.
+		// Let's populate AccessToken if Token is present.
+		AccessToken: cred.Token,
 	}, nil
 }
 
