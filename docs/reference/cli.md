@@ -4,6 +4,10 @@
 
 Root command.
 
+### `skr init`
+Initialize a new `skr` project in the current directory.
+-   **--agent, -a**: Agent to configure for (default: `antigravity`).
+
 ### `skr build [path] --tag <tag>`
 Build an Agent Skill artifact from a directory.
 -   **path**: Path to skill directory (default: `.`)
@@ -12,6 +16,10 @@ Build an Agent Skill artifact from a directory.
 ### `skr install <ref>`
 Install a skill into the current project.
 -   **ref**: Tag or digest of the skill (e.g., `ghcr.io/user/skill:v1`).
+
+### `skr validate [path]`
+Validate an Agent Skill's structure and metadata.
+-   **path**: Path to skill directory (default: `.`).
 
 ### `skr list`
 List skills installed in the current project or available globally.
@@ -74,3 +82,18 @@ Remove one or more artifact references (tags) from the local store.
 
 ### `skr system prune`
 Delete unreferenced blobs (garbage collection) to free space.
+
+---
+
+## `skr http`
+
+HTTP Server commands.
+
+### `skr http serve`
+Start a local HTTP server to browse and manage skills.
+-   **--port, -p**: Port to listen on (default: `8080`).
+-   **--oci-endpoint**: Remote OCI Registry endpoint to proxy (e.g. `https://registry-1.docker.io`).
+-   **--auth-file**: Path to a YAML file containing credentials.
+-   **--trace-provider**: Trace provider to use (`stdout`, `otlp`, `none`).
+-   **--trace-endpoint**: Endpoint for the OTLP trace provider.
+

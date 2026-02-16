@@ -10,14 +10,23 @@ This tutorial will guide you through creating, building, and running your first 
 
 ## 1. Create a Skill
 
-Create a new directory for your skill:
+First, initialize a new `skr` project (workspace):
+
+```bash
+mkdir my-project
+cd my-project
+skr init
+```
+
+This creates a `.skr.yaml` configuration file and an `.agent/skills` directory, which are required for installing skills.
+
+Next, create a directory for your skill:
 
 ```bash
 mkdir my-skill
-cd my-skill
 ```
 
-Create a `SKILL.md` file. This is the definition of your skill.
+Create a `SKILL.md` file in the `my-skill/` directory. This is the definition of your skill.
 
 ```markdown
 ---
@@ -36,7 +45,7 @@ This skill allows agents to say hello.
 Package your skill into an OCI artifact.
 
 ```bash
-skr build . --tag my-skill:v1
+skr build ./my-skill --tag my-skill:v1
 ```
 
 You should see output indicating success:
