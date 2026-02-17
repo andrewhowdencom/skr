@@ -57,6 +57,12 @@ If [path] is not provided, defaults to the current directory.`,
 			fmt.Printf("Detected git source: %s\n", sourceURL)
 		}
 
+		// Add OCI standard annotations
+		annotations["org.opencontainers.image.title"] = s.Name
+		if s.Description != "" {
+			annotations["org.opencontainers.image.description"] = s.Description
+		}
+
 		// Add Metadata Annotations
 		if s.Metadata.Author != "" {
 			annotations["com.skr.author"] = s.Metadata.Author
