@@ -61,6 +61,7 @@ If [path] is not provided, defaults to the current directory.`,
 		annotations["org.opencontainers.image.title"] = s.Name
 		if s.Description != "" {
 			annotations["org.opencontainers.image.description"] = s.Description
+			annotations["com.skr.description"] = s.Description
 		}
 
 		// Add Metadata Annotations
@@ -69,9 +70,6 @@ If [path] is not provided, defaults to the current directory.`,
 		}
 		if s.Metadata.Version != "" {
 			annotations["com.skr.version"] = s.Metadata.Version
-		}
-		if s.Description != "" {
-			annotations["com.skr.description"] = s.Description
 		}
 
 		// Add Dependencies Annotation
