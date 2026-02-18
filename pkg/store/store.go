@@ -123,6 +123,13 @@ func (s *Store) Build(ctx context.Context, srcDir string, tag string, annotation
 		Size:      layerSize,
 	}
 
+	// Add layer annotation for ORAS extraction if skill name is available
+	if skillName, ok := annotations["org.opencontainers.image.title"]; ok && skillName != "" {
+		layerDesc.Annotations = map[string]string{
+			"org.opencontainers.image.title": skillName + ".tar.gz",
+		}
+	}
+
 	err = s.pushBlob(ctx, layerDesc, bytes.NewReader(layerBytes))
 	if err != nil {
 		return fmt.Errorf("failed to push layer: %w", err)
