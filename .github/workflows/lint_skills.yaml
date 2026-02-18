@@ -1,0 +1,37 @@
+name: Lint Skills
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'skills/**'
+      - 'pkg/lint/**'
+      - 'cmd/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'skills/**'
+      - 'pkg/lint/**'
+      - 'cmd/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23' # align with go.mod
+
+      - name: Build skr
+        run: go build -o skr main.go
+
+      - name: Lint Verification
+        run: |
+          # Find all directories containing SKILL.md
+          find skills -name SKILL.md -print0 | xargs -0 -I {} dirname {} | sort | uniq | while read -r skill_dir; do
+            echo "Linting $skill_dir..."
+            ./skr lint --fail-on=spec,style "$skill_dir"
+          done

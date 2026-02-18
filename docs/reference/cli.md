@@ -20,6 +20,15 @@ Install a skill into the current project.
 ### `skr validate [path]`
 Validate an Agent Skill's structure and metadata.
 -   **path**: Path to skill directory (default: `.`).
+-   **--fix**: Automatically fix issues where possible.
+
+### `skr lint [path]`
+Lint an Agent Skill against specification and style guidelines.
+-   **path**: Path to skill directory (default: `.`).
+-   **--format**: Output format (`gnu`, `sarif`, `checkstyle`).
+-   **--output**: Output file path.
+-   **--fail-on**: Categories to fail on (`spec`, `style`).
+-   **--fix**: Automatically fix issues where possible.
 
 ### `skr list`
 List skills installed in the current project or available globally.

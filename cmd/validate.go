@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/andrewhowdencom/skr/pkg/lint"
+	"github.com/andrewhowdencom/skr/pkg/lint/rules"
 	"github.com/andrewhowdencom/skr/pkg/skill"
 	"github.com/spf13/cobra"
 )
@@ -27,17 +28,25 @@ If [path] is not provided, defaults to the current directory.`,
 			path = args[0]
 		}
 
-		linter := lint.NewLinter([]lint.Check{
-			&lint.SpecCheck{},
+		fix, _ := cmd.Flags().GetBool("fix")
+
+		linter := lint.NewLinter([]lint.Checker{
+			&rules.Name{},
+			&rules.Description{},
+			&rules.DescriptionCapitalization{},
+			&rules.DescriptionPeriod{},
 		})
 
-		issues, err := linter.Run(path)
+		issues, err := linter.Run(path, fix)
 		if err != nil {
 			return fmt.Errorf("skill is invalid: %w", err)
 		}
 
 		hasError := false
 		for _, issue := range issues {
+			if issue.Fixed {
+				continue
+			}
 			if issue.Category == lint.CategorySpec {
 				fmt.Printf("Error: %s\n", issue.Message)
 				hasError = true
@@ -62,5 +71,6 @@ If [path] is not provided, defaults to the current directory.`,
 }
 
 func init() {
+	validateCmd.Flags().Bool("fix", false, "Automatically fix issues where possible")
 	rootCmd.AddCommand(validateCmd)
 }

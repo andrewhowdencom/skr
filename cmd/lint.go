@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/andrewhowdencom/skr/pkg/lint"
+	"github.com/andrewhowdencom/skr/pkg/lint/rules"
 	"github.com/spf13/cobra"
 )
 
@@ -24,13 +25,16 @@ Outputs issues in various formats (GNU, SARIF, Checkstyle).`,
 		format, _ := cmd.Flags().GetString("format")
 		outputFile, _ := cmd.Flags().GetString("output")
 		failOn, _ := cmd.Flags().GetStringSlice("fail-on")
+		fix, _ := cmd.Flags().GetBool("fix")
 
-		linter := lint.NewLinter([]lint.Check{
-			&lint.SpecCheck{},
-			&lint.StyleCheck{},
+		linter := lint.NewLinter([]lint.Checker{
+			&rules.Name{},
+			&rules.Description{},
+			&rules.DescriptionCapitalization{},
+			&rules.DescriptionPeriod{},
 		})
 
-		issues, err := linter.Run(path)
+		issues, err := linter.Run(path, fix)
 		if err != nil {
 			return err
 		}
@@ -62,6 +66,9 @@ Outputs issues in various formats (GNU, SARIF, Checkstyle).`,
 		// Check for failures based on fail-on categories
 		shouldExit := false
 		for _, issue := range issues {
+			if issue.Fixed {
+				continue // Don't fail if issue was fixed
+			}
 			for _, category := range failOn {
 				if string(issue.Category) == category {
 					shouldExit = true
@@ -85,5 +92,6 @@ func init() {
 	lintCmd.Flags().String("format", "gnu", "Output format (gnu, sarif, checkstyle)")
 	lintCmd.Flags().String("output", "", "Output file path (default stdout)")
 	lintCmd.Flags().StringSlice("fail-on", []string{"spec", "style"}, "Categories to fail on (spec, style)")
+	lintCmd.Flags().Bool("fix", false, "Automatically fix issues where possible")
 	rootCmd.AddCommand(lintCmd)
 }

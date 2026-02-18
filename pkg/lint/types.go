@@ -51,10 +51,15 @@ type Issue struct {
 	Column   int
 	Message  string
 	Category Category
+	Fixed    bool
 }
 
 func (i Issue) String() string {
-	return fmt.Sprintf("%s:%d:%d: %s: %s", i.Path, i.Line, i.Column, i.Category, i.Message)
+	fixedStr := ""
+	if i.Fixed {
+		fixedStr = " (FIXED)"
+	}
+	return fmt.Sprintf("%s:%d:%d: %s: %s%s", i.Path, i.Line, i.Column, i.Category, i.Message, fixedStr)
 }
 
 // Formatter is the interface for formatting lint issues.

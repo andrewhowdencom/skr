@@ -17,6 +17,7 @@ If `[path]` is not provided, it defaults to the current directory.
 | `--format` | | Output format (`gnu`, `sarif`, `checkstyle`) | `gnu` |
 | `--output` | | Output file path | `stdout` |
 | `--fail-on` | | Categories to fail on (`spec`, `style`) | `spec`, `style` |
+| `--fix` | | Automatically fix issues where possible | `false` |
 
 ## Output Formats
 
@@ -56,4 +57,9 @@ skr lint ./my-skill --format sarif --output results.sarif
 Fail only on specification violations, ignoring style warnings:
 ```bash
 skr lint --fail-on spec
+```
+
+Automatically fix style issues:
+```bash
+skr lint --fix
 ```
