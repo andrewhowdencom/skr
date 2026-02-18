@@ -58,4 +58,5 @@ nav:
     - Core Concepts: explanation/concepts.md
   - Reference:
     - CLI Reference: reference/cli.md
+    - Lint Command: reference/lint.md
     - Specification: reference/specification.md

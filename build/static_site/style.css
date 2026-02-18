@@ -1,0 +1,343 @@
+:root {
+    /* MD3 Light Theme Tokens */
+    --md-sys-color-primary: #005AC1;
+    --md-sys-color-on-primary: #FFFFFF;
+    --md-sys-color-primary-container: #D8E2FF;
+    --md-sys-color-on-primary-container: #001A41;
+    --md-sys-color-secondary: #575E71;
+    --md-sys-color-on-secondary: #FFFFFF;
+    --md-sys-color-secondary-container: #DUE2F9;
+    --md-sys-color-on-secondary-container: #141B2C;
+    --md-sys-color-tertiary: #715573;
+    --md-sys-color-on-tertiary: #FFFFFF;
+    --md-sys-color-tertiary-container: #FBD7FC;
+    --md-sys-color-on-tertiary-container: #29132D;
+    --md-sys-color-error: #BA1A1A;
+    --md-sys-color-on-error: #FFFFFF;
+    --md-sys-color-error-container: #FFDAD6;
+    --md-sys-color-on-error-container: #410002;
+    --md-sys-color-background: #FEFBFF;
+    --md-sys-color-on-background: #1B1B1F;
+    --md-sys-color-surface: #FEFBFF;
+    --md-sys-color-on-surface: #1B1B1F;
+    --md-sys-color-surface-variant: #E1E2EC;
+    --md-sys-color-on-surface-variant: #44474F;
+    --md-sys-color-outline: #74777F;
+    --md-sys-color-outline-variant: #C4C6D0;
+    --md-sys-color-shadow: #000000;
+    --md-sys-color-scrim: #000000;
+    --md-sys-color-inverse-surface: #303033;
+    --md-sys-color-inverse-on-surface: #F2F0F4;
+    --md-sys-color-inverse-primary: #ADC6FF;
+
+    /* Elevation */
+    --md-sys-elevation-level1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+    --md-sys-elevation-level2: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+
+    /* Shape */
+    --md-sys-shape-corner-medium: 12px;
+    --md-sys-shape-corner-large: 16px;
+    --md-sys-shape-corner-extra-large: 28px;
+
+    /* Typography */
+    --md-sys-typescale-headline-large: 400 32px/40px 'Roboto', sans-serif;
+    --md-sys-typescale-headline-medium: 400 28px/36px 'Roboto', sans-serif;
+    --md-sys-typescale-headline-small: 400 24px/32px 'Roboto', sans-serif;
+    --md-sys-typescale-title-large: 400 22px/28px 'Roboto', sans-serif;
+    --md-sys-typescale-body-large: 400 16px/24px 'Roboto', sans-serif;
+    --md-sys-typescale-body-medium: 400 14px/20px 'Roboto', sans-serif;
+    --md-sys-typescale-label-large: 500 14px/20px 'Roboto', sans-serif;
+}
+
+body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-background);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* AppBar */
+header.top-app-bar {
+    background-color: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    /* No shadow by default in MD3, but distinct background helps */
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.headline {
+    font: var(--md-sys-typescale-title-large);
+    flex-grow: 1;
+}
+
+/* Layout */
+.main-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Search Bar */
+.search-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.search-bar {
+    background-color: var(--md-sys-color-surface-variant);
+    border-radius: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    width: 100%;
+    max-width: 720px;
+    height: 56px;
+    box-shadow: none;
+    /* Flat by default */
+    transition: box-shadow 0.2s;
+}
+
+.search-bar:focus-within {
+    background-color: var(--md-sys-color-surface-variant);
+    box-shadow: var(--md-sys-elevation-level1);
+}
+
+.search-icon {
+    font-family: 'Material Symbols Outlined';
+    font-size: 24px;
+    color: var(--md-sys-color-on-surface-variant);
+    margin-right: 12px;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    color: var(--md-sys-color-on-surface);
+    font: var(--md-sys-typescale-body-large);
+    width: 100%;
+    height: 100%;
+    outline: none;
+}
+
+/* Grid */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px 24px;
+    /* Row and column gap */
+}
+
+/* Modal */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-dialog {
+    background-color: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+    border-radius: 28px;
+    padding: 24px;
+    width: 90%;
+    max-width: 560px;
+    box-shadow: var(--md-sys-elevation-3);
+    transform: scale(0.9);
+    transition: transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal-backdrop.open .modal-dialog {
+    transform: scale(1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-headline {
+    font-size: 24px;
+    font-weight: 400;
+    /* Regular */
+    line-height: 32px;
+}
+
+.modal-text {
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.modal-code-block {
+    background-color: var(--md-sys-color-surface-variant);
+    color: var(--md-sys-color-on-surface-variant);
+    padding: 16px;
+    border-radius: 12px;
+    font-family: monospace;
+    font-size: 14px;
+    overflow-x: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    color: var(--md-sys-color-primary);
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.btn-text:hover {
+    background-color: rgba(65, 95, 145, 0.08);
+    /* Primary with opacity */
+}
+
+/* Card */
+.card {
+    background-color: var(--md-sys-color-surface);
+    border-radius: var(--md-sys-shape-corner-medium);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    height: 100%;
+    /* Ensure full height in grid */
+    box-sizing: border-box;
+}
+
+.card:hover {
+    background-color: var(--md-sys-color-surface);
+    /* Keep surface color */
+    box-shadow: var(--md-sys-elevation-level1);
+    transform: translateY(-2px);
+    border-color: var(--md-sys-color-outline);
+    /* Slightly darker border */
+}
+
+.card-title {
+    font: var(--md-sys-typescale-title-large);
+    margin-bottom: 4px;
+    color: var(--md-sys-color-on-surface);
+}
+
+.card-subhead {
+    font: var(--md-sys-typescale-body-medium);
+    color: var(--md-sys-color-on-surface-variant);
+    margin-bottom: 12px;
+}
+
+.card-text {
+    font: var(--md-sys-typescale-body-medium);
+    color: var(--md-sys-color-on-surface-variant);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 16px;
+    flex-grow: 1;
+}
+
+/* Chips */
+.chips-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: auto;
+    /* Push to bottom */
+}
+
+.chip {
+    background-color: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font: var(--md-sys-typescale-label-large);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--md-sys-color-on-surface-variant);
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.icon-large {
+    font-size: 64px;
+    color: var(--md-sys-color-outline);
+    margin-bottom: 8px;
+}
+
+.headline-small {
+    font: var(--md-sys-typescale-headline-small);
+    margin: 0;
+    color: var(--md-sys-color-on-surface);
+}
+
+.body-medium {
+    font: var(--md-sys-typescale-body-medium);
+    margin: 0;
+}
+
+.hidden {
+    display: none;
+}

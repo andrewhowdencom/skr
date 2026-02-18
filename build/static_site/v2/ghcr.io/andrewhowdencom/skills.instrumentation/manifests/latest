@@ -1,0 +1,1 @@
+{"schemaVersion":2,"config":{"mediaType":"application/vnd.agentskills.skill.config.v1+json","digest":"sha256:0f328f7ba4d44facecb57ef030b01ebb3c032879e6d17e919fbedea6c742c092","size":34},"layers":[{"mediaType":"application/vnd.agentskills.skill.layer.v1+tar+gzip","digest":"sha256:ca03a57b44db11695ec87e983a37654a5c9edcdd3a10ecc8b6ef0ea76a412fb6","size":1025}]}

@@ -1,0 +1,138 @@
+[
+  {
+    "name": "antigravity/layout-test-long-desc:v0.0.1",
+    "description": "This is a skill with a very long description to test how the card layout handles text overflow and clamping. Ideally, this text should be truncated after a few lines to maintain a clean grid appearance.",
+    "metadata": {
+      "author": "antigravity",
+      "version": "v0.0.1"
+    }
+  },
+  {
+    "name": "antigravity/test-skill:v1.0.0",
+    "description": "",
+    "metadata": {
+      "author": "antigravity",
+      "version": "v1.0.0"
+    }
+  },
+  {
+    "name": "builder:latest",
+    "description": "A skill for building and maintaining Agent Skills.",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "example.com/user/skill-a:latest",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "ghcr.io/andrewhowdencom/skills.cli:latest",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "ghcr.io/andrewhowdencom/skills.documentation:latest",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "ghcr.io/andrewhowdencom/skills.git:latest",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "ghcr.io/andrewhowdencom/skills.go:3fe18f2",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "ghcr.io/andrewhowdencom/skills.go:latest",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "ghcr.io/andrewhowdencom/skills.instrumentation:latest",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "ghcr.io/andrewhowdencom/skills.worktree:a4b0a89",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "ghcr.io/andrewhowdencom/skr.builder:latest",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "ghcr.io/deliveryhero/skills.go:latest",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "skr:latest",
+    "description": "A skill for using the skr CLI tool.",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  },
+  {
+    "name": "testuser/skill-a:1.0.0",
+    "description": "",
+    "metadata": {
+      "author": "testuser",
+      "version": "1.0.0"
+    }
+  },
+  {
+    "name": "testuser/skill-b:1.0.0",
+    "description": "",
+    "metadata": {
+      "author": "testuser",
+      "version": "1.0.0"
+    }
+  },
+  {
+    "name": "verify-publish:v1",
+    "description": "",
+    "metadata": {
+      "author": "",
+      "version": ""
+    }
+  }
+]
