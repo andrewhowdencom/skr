@@ -8,6 +8,7 @@ import (
 
 	"github.com/andrewhowdencom/skr/pkg/git"
 	"github.com/andrewhowdencom/skr/pkg/registry"
+	"github.com/andrewhowdencom/skr/pkg/skill"
 	"github.com/andrewhowdencom/skr/pkg/store"
 	"github.com/spf13/cobra"
 )
@@ -121,9 +122,32 @@ If --base is provided, only publishes skills that have changed since that git re
 
 			absPath, _ := filepath.Abs(skillPath)
 
+			// Load skill metadata for annotations
+			s, err := skill.Load(skillPath)
+			if err != nil {
+				fmt.Printf("Failed to load skill metadata for %s: %v\n", skillName, err)
+				errs = append(errs, fmt.Errorf("failed to load skill %s: %w", skillName, err))
+				continue
+			}
+
+			// Build annotations
+			annotations := map[string]string{
+				"org.opencontainers.image.title": s.Name,
+			}
+			if s.Description != "" {
+				annotations["org.opencontainers.image.description"] = s.Description
+				annotations["com.skr.description"] = s.Description
+			}
+			if s.Metadata.Author != "" {
+				annotations["com.skr.author"] = s.Metadata.Author
+			}
+			if s.Metadata.Version != "" {
+				annotations["com.skr.version"] = s.Metadata.Version
+			}
+
 			for _, tag := range tags {
 				// Build (idempotent content-wise, just updates tag reference)
-				if err := st.Build(ctx, absPath, tag, nil); err != nil {
+				if err := st.Build(ctx, absPath, tag, annotations); err != nil {
 					fmt.Printf("Build failure for %s: %v\n", tag, err)
 					errs = append(errs, fmt.Errorf("build failed for %s: %w", tag, err))
 					continue

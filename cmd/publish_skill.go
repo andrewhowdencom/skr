@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/andrewhowdencom/skr/pkg/registry"
+	"github.com/andrewhowdencom/skr/pkg/skill"
 	"github.com/andrewhowdencom/skr/pkg/store"
 	"github.com/spf13/cobra"
 )
@@ -32,16 +33,30 @@ var publishSkillCmd = &cobra.Command{
 			return fmt.Errorf("failed to resolve absolute path: %w", err)
 		}
 
+		// Load skill metadata for annotations
+		s, err := skill.Load(srcDir)
+		if err != nil {
+			return fmt.Errorf("failed to load skill metadata: %w", err)
+		}
+
 		st, err := store.New("")
 		if err != nil {
 			return fmt.Errorf("failed to initialize store: %w", err)
 		}
 
-		// Detect git remote for annotations (reusing logic from build.go which is embedded in store.Build? No, it was injected)
-		// We'll reimplement the simple annotation logic here or refactor into pkg/git later.
-		// For now, let's keep it simple.
+		// Build annotations
 		annotations := map[string]string{
 			"org.opencontainers.image.created": "true", // Placeholder, actual time added by store
+			"org.opencontainers.image.title":   s.Name,
+		}
+		if s.Description != "" {
+			annotations["org.opencontainers.image.description"] = s.Description
+		}
+		if s.Metadata.Author != "" {
+			annotations["com.skr.author"] = s.Metadata.Author
+		}
+		if s.Metadata.Version != "" {
+			annotations["com.skr.version"] = s.Metadata.Version
 		}
 
 		fmt.Printf("Building skill from %s...\n", srcDir)
