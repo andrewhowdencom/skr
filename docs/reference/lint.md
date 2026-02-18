@@ -63,3 +63,25 @@ Automatically fix style issues:
 ```bash
 skr lint --fix
 ```
+
+## Recursive Linting
+
+The `lint` command recursively scans the provided directory (or current directory by default) for `SKILL.md` files and lints all of them.
+
+```bash
+skr lint .
+```
+
+## GitHub Workflow
+
+You can use the provided reusable workflow to lint skills in your repository:
+
+```yaml
+name: Lint Skills
+on: [push, pull_request]
+jobs:
+  lint:
+    uses: andrewhowdencom/skr/.github/workflows/lint.yaml@main
+    with:
+      path: .
+```

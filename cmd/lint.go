@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/andrewhowdencom/skr/pkg/lint"
 	"github.com/andrewhowdencom/skr/pkg/lint/rules"
@@ -34,19 +35,57 @@ Outputs issues in various formats (GNU, SARIF, Checkstyle).`,
 			&rules.DescriptionPeriod{},
 		})
 
-		issues, err := linter.Run(path, fix)
+		var allIssues []lint.Issue
+		var validationErrors []error
+
+		// Recursive scan
+		err := filepath.WalkDir(path, func(currentPath string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() {
+				return nil
+			}
+
+			// Skip hidden directories and node_modules
+			if d.Name() != "." && (d.Name()[0] == '.' || d.Name() == "node_modules") {
+				return filepath.SkipDir
+			}
+
+			// Check for SKILL.md
+			skillPath := filepath.Join(currentPath, "SKILL.md")
+			if _, err := os.Stat(skillPath); err == nil {
+				// Found a skill, lint it
+				issues, err := linter.Run(currentPath, fix)
+				if err != nil {
+					validationErrors = append(validationErrors, fmt.Errorf("failed to lint %s: %w", currentPath, err))
+					return nil // Continue finding others
+				}
+				allIssues = append(allIssues, issues...)
+			}
+			return nil
+		})
+
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to walk directory: %w", err)
+		}
+
+		if len(validationErrors) > 0 {
+			for _, err := range validationErrors {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			}
+			// We might still want to output issues if we found some before error?
+			// But usually tool errors are separate.
 		}
 
 		var formattedOutput string
 		switch format {
 		case "sarif":
-			formattedOutput, err = lint.FormatSARIF(issues)
+			formattedOutput, err = lint.FormatSARIF(allIssues)
 		case "checkstyle":
-			formattedOutput, err = lint.FormatCheckstyle(issues)
+			formattedOutput, err = lint.FormatCheckstyle(allIssues)
 		case "gnu":
-			formattedOutput, err = lint.FormatGNU(issues)
+			formattedOutput, err = lint.FormatGNU(allIssues)
 		default:
 			return fmt.Errorf("unknown format: %s", format)
 		}
@@ -65,7 +104,7 @@ Outputs issues in various formats (GNU, SARIF, Checkstyle).`,
 
 		// Check for failures based on fail-on categories
 		shouldExit := false
-		for _, issue := range issues {
+		for _, issue := range allIssues {
 			if issue.Fixed {
 				continue // Don't fail if issue was fixed
 			}
@@ -80,7 +119,7 @@ Outputs issues in various formats (GNU, SARIF, Checkstyle).`,
 			}
 		}
 
-		if shouldExit {
+		if shouldExit || len(validationErrors) > 0 {
 			os.Exit(1)
 		}
 

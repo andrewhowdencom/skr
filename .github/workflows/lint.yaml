@@ -1,0 +1,37 @@
+name: Lint
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        description: "Path to skill directory or root"
+        required: false
+        type: string
+        default: "."
+      fail-on:
+        description: "Categories to fail on (spec, style)"
+        required: false
+        type: string
+        default: "spec,style"
+  push:
+    branches: [ main ]
+    paths:
+      - 'skills/**'
+      - 'pkg/lint/**'
+      - 'cmd/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'skills/**'
+      - 'pkg/lint/**'
+      - 'cmd/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/andrewhowdencom/skr:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint
+        run: skr lint --fail-on "${{ inputs.fail-on || 'spec,style' }}" "${{ inputs.path || '.' }}"
