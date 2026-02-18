@@ -75,28 +75,9 @@ func LoadUnverified(dir string) (*Skill, error) {
 }
 
 // Validate checks if the skill metadata is valid according to the specification.
+// Deprecated: Use pkg/lint instead.
 func (s *Skill) Validate() error {
-	if s.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-	if len(s.Name) > 64 {
-		return fmt.Errorf("name must be 64 characters or less")
-	}
-	if !validNameRegex.MatchString(s.Name) {
-		return fmt.Errorf("name must contain only lowercase alphanumeric characters and hyphens")
-	}
-
-	if s.Description == "" {
-		return fmt.Errorf("description is required")
-	}
-	if len(s.Description) > 1024 {
-		return fmt.Errorf("description must be 1024 characters or less")
-	}
-
-	// Validate directory structure matches name (warning or error?)
-	// Strictly speaking, the spec says name "Should match the directory name".
-	// We won't enforce it as a hard error here but it's good practice.
-
+	// Validation logic has been moved to pkg/lint/checks.go
 	return nil
 }
 
