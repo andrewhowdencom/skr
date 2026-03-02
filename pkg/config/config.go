@@ -18,6 +18,8 @@ var KnownAgents = map[string]func(home string) string{
 	"standard":    func(home string) string { return filepath.Join(home, ".config", "agent", "skills") },
 	"antigravity": func(home string) string { return filepath.Join(home, ".antigravity", "skills") },
 	"roocode":     func(home string) string { return filepath.Join(home, ".roocode", "skills") },
+	"gemini":      func(home string) string { return filepath.Join(home, ".gemini", "skills") },
+	"claude":      func(home string) string { return filepath.Join(home, ".claude", "skills") },
 }
 
 type Config struct {

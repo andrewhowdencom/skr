@@ -6,7 +6,7 @@ Root command.
 
 ### `skr init`
 Initialize a new `skr` project in the current directory.
--   **--agent, -a**: Agent to configure for (default: `antigravity`).
+-   **--agent, -a**: Agent to configure for (e.g. `antigravity`, `gemini`, `claude`, `standard`). (default: `antigravity`).
 
 ### `skr build [path] --tag <tag>`
 Build an Agent Skill artifact from a directory.

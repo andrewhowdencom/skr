@@ -61,5 +61,5 @@ directory structure for agent skills (e.g., .agent/skills).`,
 func init() {
 	rootCmd.AddCommand(initCmd)
 
-	initCmd.Flags().StringVarP(&initAgent, "agent", "a", "antigravity", "Agent to configure for (e.g. antigravity, standard)")
+	initCmd.Flags().StringVarP(&initAgent, "agent", "a", "antigravity", "Agent to configure for (e.g. antigravity, gemini, claude, standard)")
 }

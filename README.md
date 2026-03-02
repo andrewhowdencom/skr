@@ -110,7 +110,8 @@ skr registry logout my-registry.com
 
 1. [anthropic/skills](https://github.com/anthropics/skills)
 2. [The complete guide to building Claude skills](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf)
-1. [Codex Skills](https://developers.openai.com/codex/skills/)
-1. [Antigravity Skills](https://antigravity.google/docs/skills)
-1. [Agent Skills](https://agentskills.io/what-are-skills)
+3. [Codex Skills](https://developers.openai.com/codex/skills/)
+4. [Antigravity Skills](https://antigravity.google/docs/skills)
+5. [Gemini CLI Skills](https://geminicli.com/docs/skills/)
+6. [Agent Skills](https://agentskills.io/what-are-skills)
 
