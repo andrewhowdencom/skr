@@ -39,6 +39,11 @@ Remove a skill from the current project configuration.
 ### `skr sync`
 Synchronize the local`.agent/skills` directory with the `.skr.yaml` configuration.
 
+### `skr update [skill]`
+Update installed skills to their latest hashes, bypassing the lockfile to fetch the newest manifest.
+-   **skill**: The base reference of the skill to update (e.g., `ghcr.io/user/skill`).
+-   **--all**: Update all skills listed in `.skr.yaml`.
+
 ### `skr publish [path] --tag <tag>`
 Build a skill from a directory and immediately push it to a registry.
 -   **path**: Path to skill directory (default: `.`)

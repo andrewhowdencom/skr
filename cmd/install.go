@@ -109,7 +109,7 @@ If --global is set, installs to the global configuration.`,
 		}
 
 		slog.Info("installing skill", "skill", ref, "path", installRoot)
-		name, digest, err := action.InstallSkill(ctx, st, ref, installRoot)
+		name, digest, err := action.InstallSkill(ctx, st, ref, installRoot, false)
 		if err != nil {
 			return err
 		}

@@ -19,7 +19,7 @@ import (
 
 // InstallSkill installs a skill and its dependencies from the store to the installDir.
 // Returns the root name, manifest digest, and error.
-func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string) (string, string, error) {
+func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string, forcePull bool) (string, string, error) {
 	// 1. Resolve all dependencies
 	resolver := resolution.New(st)
 	resolver.SetPuller(func(ctx context.Context, ref string) error {
@@ -38,7 +38,7 @@ func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string) 
 
 	// 2. Install each skill (sequentially for now)
 	for i, r := range refs {
-		name, d, err := installOne(ctx, st, r, installDir)
+		name, d, err := installOne(ctx, st, r, installDir, forcePull)
 		if err != nil {
 			return "", "", fmt.Errorf("failed to install %s: %w", r, err)
 		}
@@ -53,13 +53,15 @@ func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string) 
 	return rootName, rootDigest, nil
 }
 
-func installOne(ctx context.Context, st *store.Store, ref, installDir string) (string, string, error) {
+func installOne(ctx context.Context, st *store.Store, ref, installDir string, forcePull bool) (string, string, error) {
 	// 1. Resolve Reference locally
 	desc, err := st.Resolve(ctx, ref)
 	shouldPull := false
 
 	if err != nil {
 		// Not found locally?
+		shouldPull = true
+	} else if forcePull {
 		shouldPull = true
 	} else {
 		// Found locally. Check if we should update.

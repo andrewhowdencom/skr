@@ -93,7 +93,7 @@ var syncCmd = &cobra.Command{
 			slog.Info("syncing skill", "ref", ref, "installRef", installRef)
 
 			// Install using the action package
-			_, digest, err := action.InstallSkill(ctx, st, installRef, installRoot)
+			_, digest, err := action.InstallSkill(ctx, st, installRef, installRoot, false)
 			if err != nil {
 				return fmt.Errorf("failed to install %s: %w", ref, err)
 			}

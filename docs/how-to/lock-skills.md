@@ -23,12 +23,17 @@ Whenever the above skills are fetched using `skr sync`, the process strictly rou
 
 If you have downloaded a skill utilizing a floating tag equivalent like `:latest` or `:1.0` (which generally maps to `1.0.X` under semver conventions), the locked digest won't update itself automatically when a remote author updates the tag. 
 
-To upgrade to the newest manifestation of a floating tag:
-1. Open your terminal to the project root.
-2. Un-lock the dependency by manually removing it from the `.skr.lock` file under the text editor.
-3. Rerun `skr sync`. 
+To upgrade to the newest manifestation of a floating tag, simply use the `update` command:
 
-The process will fetch the freshest image referenced by your `.skr.yaml` and recalculate a new locking digest inside `.skr.lock`.
+```bash
+# Update a specific skill by matching its base repository string
+skr update ghcr.io/andrewhowdencom/skills.git
+
+# Or update all skills in your configuration simultaneously
+skr update --all
+```
+
+This bypasses the local lock, fetches the freshest manifest from the remote environment matching your `.skr.yaml` tags, and recalculates a new deterministic lock digest inside `.skr.lock`.
 
 ## Checking in the Lockfile
 
