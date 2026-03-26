@@ -94,6 +94,17 @@ If a new digest is discovered (e.g., when a floating tag like :latest points to 
 			lockFile.Skills[ref] = digest
 		}
 
+		// Prune lock file against current configuration
+		validSkills := make(map[string]bool)
+		for _, ref := range cfg.Skills {
+			validSkills[ref] = true
+		}
+		for lockedRef := range lockFile.Skills {
+			if !validSkills[lockedRef] {
+				delete(lockFile.Skills, lockedRef)
+			}
+		}
+
 		if err := lockFile.SaveTo(lockFilePath); err != nil {
 			return fmt.Errorf("failed to save lock file: %w", err)
 		}
