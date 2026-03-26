@@ -1,4 +1,5 @@
 skills:
     ghcr.io/andrewhowdencom/skills.documentation:eca82c3: sha256:c491ea7eba0aa5b043a28b07c580e367638f87159a29e6b463648e0e3a0a72b0
     ghcr.io/andrewhowdencom/skills.git:fb45f15: sha256:b3c1b9fadfb3bff43e9cdedb9734ca7d25b84e4ac0c30df3dc1e3ddfad0dde5d
+    ghcr.io/andrewhowdencom/skills.git:latest: sha256:6064002c88ffea1496e8cff3655edb3f4257c4087e31b6d5e031261d91f5cb95
     ghcr.io/andrewhowdencom/skills.go:3fe18f2: sha256:5a8f586108ceeff51a8f86e1fb0bcef716f4935dc515ac25d2d4433c8ac79f01

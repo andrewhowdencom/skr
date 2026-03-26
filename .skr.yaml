@@ -1,5 +1,5 @@
 agents: []
 skills:
-    - ghcr.io/andrewhowdencom/skills.git:fb45f15
+    - ghcr.io/andrewhowdencom/skills.git:latest
     - ghcr.io/andrewhowdencom/skills.go:3fe18f2
     - ghcr.io/andrewhowdencom/skills.documentation:eca82c3
