@@ -26,7 +26,7 @@ content or preparing for offline installation.`,
 		}
 
 		fmt.Printf("Pulling %s...\n", ref)
-		if err := registry.Pull(ctx, st, ref); err != nil {
+		if _, err := registry.Pull(ctx, st, ref); err != nil {
 			return err
 		}
 

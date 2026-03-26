@@ -58,13 +58,13 @@ Run:
 skr sync
 ```
 
-This ensures that `.agent/skills` contains exactly what is listed in `.skr.yaml`.
+This ensures that `.agent/skills` contains exactly what is listed in `.skr.yaml`. If you have a `.skr.lock` file, it will reliably resolve tags to the exact image digests that were originally installed, creating deterministic developer environments.
 
 ## 4. Version Control Guidelines
 
 When using `skr` in a team or CI/CD environment, following these `.gitignore` best practices is recommended:
 
--   **Commit**: `.skr.yaml` (This is your source of truth).
+-   **Commit**: `.skr.yaml` and `.skr.lock` (These are your source of truth and determine reproducible versions).
 -   **Ignore**: `.agent/skills/` (These are generated artifacts, similar to `node_modules`).
 
 Add to your `.gitignore`:

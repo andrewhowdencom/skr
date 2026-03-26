@@ -28,6 +28,7 @@ Since `skr` is self-hosting, the best examples are the files in this repository:
 *   **Skill Structure**: See `skills/builder/SKILL.md`
 *   **Workflow**: See `.github/workflows/publish-skills.yaml` for a production-ready GitHub Actions workflow to publish skills.
 *   **Configuration**: See `.skr.yaml` for an extensively documented configuration example.
+*   **Reproducibility**: See `.skr.lock` as the generated lockfile storing guaranteed immutable tag hashes.
 
 ## Installation
  
