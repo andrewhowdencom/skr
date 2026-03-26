@@ -7,7 +7,7 @@ on:
         description: "Path to skill directory or root"
         required: false
         type: string
-        default: "."
+        default: "skills"
       fail-on:
         description: "Categories to fail on (spec, style)"
         required: false
@@ -34,4 +34,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Lint
-        run: skr lint --fail-on "${{ inputs.fail-on || 'spec,style' }}" "${{ inputs.path || '.' }}"
+        run: skr lint --fail-on "${{ inputs.fail-on || 'spec,style' }}" "${{ inputs.path || 'skills' }}"

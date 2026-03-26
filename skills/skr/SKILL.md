@@ -1,6 +1,6 @@
 ---
 name: "skr"
-description: "A skill for using the skr CLI tool."
+description: "A skill for using the skr CLI tool"
 ---
 
 # skr Tool Skill
