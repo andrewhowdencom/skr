@@ -22,3 +22,4 @@ This compatibility allows `skr` to work with existing infrastructure like GitHub
 
 -   **System Store**: A global cache of all downloaded/built artifacts on your machine.
 -   **Project Scope**: When you run `skr install`, skills are "installed" into your project (referenced in `.skr.yaml` and synced to `.agent/skills`).
+-   **Lockfiles**: The `.skr.lock` file stores precise digests corresponding to the tags in `.skr.yaml`, guaranteeing reproducible skill resolution on subsequent `skr sync` operations across team environments.

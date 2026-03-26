@@ -7,6 +7,7 @@ import (
 
 	skrauth "github.com/andrewhowdencom/skr/pkg/auth"
 	"github.com/andrewhowdencom/skr/pkg/store"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/registry/remote"
@@ -65,10 +66,10 @@ func Push(ctx context.Context, st *store.Store, ref string) error {
 }
 
 // Pull downloads a skill artifact from a remote registry to the local store.
-func Pull(ctx context.Context, st *store.Store, ref string) error {
+func Pull(ctx context.Context, st *store.Store, ref string) (ocispec.Descriptor, error) {
 	repo, err := remote.NewRepository(ref)
 	if err != nil {
-		return fmt.Errorf("invalid reference %s: %w", ref, err)
+		return ocispec.Descriptor{}, fmt.Errorf("invalid reference %s: %w", ref, err)
 	}
 
 	baseTransport := otelhttp.NewTransport(http.DefaultTransport)
@@ -91,10 +92,10 @@ func Pull(ctx context.Context, st *store.Store, ref string) error {
 		srcRef = "latest"
 	}
 
-	_, err = oras.Copy(ctx, repo, srcRef, st, ref, oras.DefaultCopyOptions)
+	desc, err := oras.Copy(ctx, repo, srcRef, st, ref, oras.DefaultCopyOptions)
 	if err != nil {
-		return fmt.Errorf("failed to pull %s: %w", ref, err)
+		return ocispec.Descriptor{}, fmt.Errorf("failed to pull %s: %w", ref, err)
 	}
 
-	return nil
+	return desc, nil
 }

@@ -54,6 +54,7 @@ nav:
     - Manage Registry: how-to/manage-registry.md
     - Manage System: how-to/manage-system.md
     - GitHub Packages: how-to/use-github-packages.md
+    - Lock Skills: how-to/lock-skills.md
   - Explanation:
     - Core Concepts: explanation/concepts.md
   - Reference:

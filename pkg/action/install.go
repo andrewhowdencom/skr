@@ -18,39 +18,42 @@ import (
 )
 
 // InstallSkill installs a skill and its dependencies from the store to the installDir.
-func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string) (string, error) {
-	// 1. Resolve all dependencies
+// Returns the root name, manifest digest, and error.
+func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string) (string, string, error) {
 	// 1. Resolve all dependencies
 	resolver := resolution.New(st)
 	resolver.SetPuller(func(ctx context.Context, ref string) error {
 		fmt.Printf("Pulling missing dependency %s...\n", ref)
-		return registry.Pull(ctx, st, ref)
+		_, err := registry.Pull(ctx, st, ref)
+		return err
 	})
 
 	refs, err := resolver.Resolve(ctx, ref)
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve dependencies for %s: %w", ref, err)
+		return "", "", fmt.Errorf("failed to resolve dependencies for %s: %w", ref, err)
 	}
 
 	var rootName string
+	var rootDigest string
 
 	// 2. Install each skill (sequentially for now)
 	for i, r := range refs {
-		name, err := installOne(ctx, st, r, installDir)
+		name, d, err := installOne(ctx, st, r, installDir)
 		if err != nil {
-			return "", fmt.Errorf("failed to install %s: %w", r, err)
+			return "", "", fmt.Errorf("failed to install %s: %w", r, err)
 		}
 
 		// The first one in the resolved list is the root skill (BFS start)
 		if i == 0 {
 			rootName = name
+			rootDigest = d
 		}
 	}
 
-	return rootName, nil
+	return rootName, rootDigest, nil
 }
 
-func installOne(ctx context.Context, st *store.Store, ref, installDir string) (string, error) {
+func installOne(ctx context.Context, st *store.Store, ref, installDir string) (string, string, error) {
 	// 1. Resolve Reference locally
 	desc, err := st.Resolve(ctx, ref)
 	shouldPull := false
@@ -72,43 +75,41 @@ func installOne(ctx context.Context, st *store.Store, ref, installDir string) (s
 
 	if shouldPull {
 		fmt.Printf("Pulling %s...\n", ref)
-		if err := registry.Pull(ctx, st, ref); err != nil {
+		var pullDesc ocispec.Descriptor
+		var pullErr error
+		if pullDesc, pullErr = registry.Pull(ctx, st, ref); pullErr != nil {
 			// If pull fails:
 			// 1. If we have local copy, maybe warn and use it?
 			// 2. If no local copy, fail.
 			if desc.Digest != "" { // We had a local copy
-				fmt.Printf("Warning: Failed to pull latest (using local copy): %v\n", err)
+				fmt.Printf("Warning: Failed to pull latest (using local copy): %v\n", pullErr)
 			} else {
-				return "", fmt.Errorf("failed to pull %s: %w", ref, err)
+				return "", "", fmt.Errorf("failed to pull %s: %w", ref, pullErr)
 			}
 		} else {
-			// Re-resolve after pull to get new descriptor
-			desc, err = st.Resolve(ctx, ref)
-			if err != nil {
-				return "", fmt.Errorf("failed to resolve %s after pull: %w", ref, err)
-			}
+			desc = pullDesc
 		}
 	}
 
 	// 2. Fetch Manifest
 	manifestReader, err := st.Fetch(ctx, desc)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch manifest: %w", err)
+		return "", "", fmt.Errorf("failed to fetch manifest: %w", err)
 	}
 	defer manifestReader.Close()
 
 	manifestBytes, err := io.ReadAll(manifestReader)
 	if err != nil {
-		return "", fmt.Errorf("failed to read manifest: %w", err)
+		return "", "", fmt.Errorf("failed to read manifest: %w", err)
 	}
 
 	var manifest ocispec.Manifest
 	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
-		return "", fmt.Errorf("failed to parse manifest: %w", err)
+		return "", "", fmt.Errorf("failed to parse manifest: %w", err)
 	}
 
 	if len(manifest.Layers) != 1 {
-		return "", fmt.Errorf("expected exactly 1 layer, got %d", len(manifest.Layers))
+		return "", "", fmt.Errorf("expected exactly 1 layer, got %d", len(manifest.Layers))
 	}
 
 	layerDesc := manifest.Layers[0]
@@ -116,26 +117,26 @@ func installOne(ctx context.Context, st *store.Store, ref, installDir string) (s
 	// 3. Fetch Layer
 	layerReader, err := st.Fetch(ctx, layerDesc)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch layer: %w", err)
+		return "", "", fmt.Errorf("failed to fetch layer: %w", err)
 	}
 	defer layerReader.Close()
 
 	// 4. Unpack Layer to Temp
 	tempDir, err := os.MkdirTemp("", "skr-install-*")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir: %w", err)
+		return "", "", fmt.Errorf("failed to create temp dir: %w", err)
 	}
 	defer os.RemoveAll(tempDir)
 
 	if err := unpackLayer(layerReader, tempDir); err != nil {
-		return "", fmt.Errorf("failed to unpack layer: %w", err)
+		return "", "", fmt.Errorf("failed to unpack layer: %w", err)
 	}
 
 	// 5. Read SKILL.md to get the name
 	s, err := skill.LoadUnverified(tempDir)
 	if err != nil {
 		// If we can't even load it (missing file, invalid yaml), we still fail as we need the name.
-		return "", fmt.Errorf("downloaded artifact is not a recognizable skill: %w", err)
+		return "", "", fmt.Errorf("downloaded artifact is not a recognizable skill: %w", err)
 	}
 
 	// Soft Validate: check if it's strictly valid, but don't fail, just warn.
@@ -145,22 +146,22 @@ func installOne(ctx context.Context, st *store.Store, ref, installDir string) (s
 
 	targetPath := filepath.Join(installDir, s.Name)
 	if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
-		return "", fmt.Errorf("failed to create parent dir: %w", err)
+		return "", "", fmt.Errorf("failed to create parent dir: %w", err)
 	}
 
 	// 6. Move tempDir to targetPath (replace if exists)
 	if err := os.RemoveAll(targetPath); err != nil {
-		return "", fmt.Errorf("failed to remove existing skill at %s: %w", targetPath, err)
+		return "", "", fmt.Errorf("failed to remove existing skill at %s: %w", targetPath, err)
 	}
 
 	if err := os.Rename(tempDir, targetPath); err != nil {
 		// Fallback: Copy content
 		if err := copyDir(tempDir, targetPath); err != nil {
-			return "", fmt.Errorf("failed to move skill to install dir: %w", err)
+			return "", "", fmt.Errorf("failed to move skill to install dir: %w", err)
 		}
 	}
 
-	return s.Name, nil
+	return s.Name, string(desc.Digest), nil
 }
 
 func unpackLayer(r io.Reader, dest string) error {

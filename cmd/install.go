@@ -109,12 +109,27 @@ If --global is set, installs to the global configuration.`,
 		}
 
 		slog.Info("installing skill", "skill", ref, "path", installRoot)
-		name, err := action.InstallSkill(ctx, st, ref, installRoot)
+		name, digest, err := action.InstallSkill(ctx, st, ref, installRoot)
 		if err != nil {
 			return err
 		}
 
-		slog.Info("successfully installed skill", "name", name, "ref", ref)
+		lockFilePath := filepath.Join(filepath.Dir(configFilePath), config.LockFileName)
+		if !isGlobal {
+			lockFilePath = filepath.Join(filepath.Dir(configFilePath), config.AltLockFileName)
+		}
+		
+		lockFile, err := config.LoadLock(lockFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to load lock file: %w", err)
+		}
+		
+		lockFile.Skills[ref] = digest
+		if err := lockFile.SaveTo(lockFilePath); err != nil {
+			return fmt.Errorf("failed to save lock file: %w", err)
+		}
+
+		slog.Info("successfully installed skill", "name", name, "ref", ref, "digest", digest)
 		return nil
 	},
 }

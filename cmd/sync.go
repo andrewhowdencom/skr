@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/andrewhowdencom/skr/pkg/action"
 	"github.com/andrewhowdencom/skr/pkg/config"
@@ -65,39 +66,44 @@ var syncCmd = &cobra.Command{
 			return fmt.Errorf("failed to create install root %s: %w", installRoot, err)
 		}
 
-		// 4. Install missing skills
-		// Naive implementation: iterate config.Skills, checked if installed.
-		// NOTE: config.Skills might be "git:v1" or just "git".
-		// We need to resolve name.
+		// 4. Load Lock file
+		var lockFile *config.LockFile
+		lockFilePath, err := config.FindLockFile(projectRoot)
+		if err == nil {
+			lockFile, _ = config.LoadLock(lockFilePath)
+		} else {
+			lockFile = config.NewLockFile()
+			lockFilePath = filepath.Join(projectRoot, config.AltLockFileName)
+		}
+
+		// 5. Install missing skills
 		for _, ref := range cfg.Skills {
-			// Check if installed
-			// We need to parse name from ref?
-			// If ref is "git:v1", name is "git".
-			// If ref is "ghcr.io/mypkg/git:latest", name is "git"?
-			// Ideally config should map name -> ref, OR we parse ref.
-			// Simple parsing: last component before tag.
-			// For now, let's assume ref is compatible with what we expect.
-			// Wait, how do we know if it's already installed?
-			// By checking directory existence?
+			installRef := ref
+			
+			// If we have a locked digest and it's not already embedded in the ref
+			if lockedDigest, ok := lockFile.Skills[ref]; ok && !strings.Contains(ref, "@") && lockedDigest != "" {
+				// Strip tag if it exists when adding digest, because oras expects either tag OR digest.
+				// Ref format: domain/repo:tag
+				// If we append @digest to domain/repo:tag, containerd/docker accepts it (usually resolves to digest).
+				// We can simply pass the digest replacing the tag if we wanted to, or append it. 
+				// The image spec allows namespace/name:tag@digest.
+				installRef = ref + "@" + lockedDigest
+			}
 
-			// FIXME: name resolution is tricky without pulling.
-			// Let's rely on 'install' logic which unpacks to temp and gets name.
-			// For sync, efficiency matters.
-			// IF we mandate ref format <name>:<tag> or just <name>, we can guess.
-			// But for now, let's just attempt install if NOT skipping?
-
-			// Actually, let's call the install logic directly.
-			// Reusing logic from installCmd would be good.
-			// Moving install logic to a pkg/action or similar?
-			// For now, inline or copy/paste logic from install.go.
-
-			slog.Info("syncing skill", "ref", ref)
+			slog.Info("syncing skill", "ref", ref, "installRef", installRef)
 
 			// Install using the action package
-			_, err := action.InstallSkill(ctx, st, ref, installRoot)
+			_, digest, err := action.InstallSkill(ctx, st, installRef, installRoot)
 			if err != nil {
 				return fmt.Errorf("failed to install %s: %w", ref, err)
 			}
+			
+			lockFile.Skills[ref] = digest
+		}
+
+		// 6. Save Lock file
+		if err := lockFile.SaveTo(lockFilePath); err != nil {
+			return fmt.Errorf("failed to save lock file: %w", err)
 		}
 
 		return nil
