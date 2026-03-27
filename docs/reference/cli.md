@@ -15,7 +15,10 @@ Build an Agent Skill artifact from a directory.
 
 ### `skr install <ref>`
 Install a skill into the current project.
--   **ref**: Tag or digest of the skill (e.g., `ghcr.io/user/skill:v1`).
+-   **ref**: The source reference for the skill. Supported schemas are:
+    -   `oci://<repo>:<tag>` or `<repo>:<tag>`: Pulls an OCI artifact (defaults to `latest` if tag is omitted).
+    -   `git://<repo>#<refspec>`, `git+https://<repo>#<refspec>`, `git+ssh://<repo>#<refspec>`, `git@<repo>#<refspec>`: Clones a git repository, checks out `<refspec>` (defaults to HEAD if omitted), builds it, and installs it from the local cache. Note: Use the `git+` prefix to distinguish Git over HTTPS from other types of connections.
+    -   `file://<path>`: Builds the skill from a local directory.
 
 ### `skr validate [path]`
 Validate an Agent Skill's structure and metadata.

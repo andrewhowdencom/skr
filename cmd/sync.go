@@ -79,13 +79,13 @@ var syncCmd = &cobra.Command{
 		// 5. Install missing skills
 		for _, ref := range cfg.Skills {
 			installRef := ref
-			
+
 			// If we have a locked digest and it's not already embedded in the ref
 			if lockedDigest, ok := lockFile.Skills[ref]; ok && !strings.Contains(ref, "@") && lockedDigest != "" {
 				// Strip tag if it exists when adding digest, because oras expects either tag OR digest.
 				// Ref format: domain/repo:tag
 				// If we append @digest to domain/repo:tag, containerd/docker accepts it (usually resolves to digest).
-				// We can simply pass the digest replacing the tag if we wanted to, or append it. 
+				// We can simply pass the digest replacing the tag if we wanted to, or append it.
 				// The image spec allows namespace/name:tag@digest.
 				installRef = ref + "@" + lockedDigest
 			}
@@ -97,7 +97,7 @@ var syncCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to install %s: %w", ref, err)
 			}
-			
+
 			lockFile.Skills[ref] = digest
 		}
 

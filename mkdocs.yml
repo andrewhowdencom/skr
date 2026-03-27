@@ -51,6 +51,8 @@ nav:
     - Managing Projects: tutorials/managing-project.md
     - Monorepo Workflow: tutorials/monorepo-workflow.md
   - How-to Guides:
+    - Install Local Skill: how-to/install-local.md
+    - Install Git Skill: how-to/install-git.md
     - Manage Registry: how-to/manage-registry.md
     - Manage System: how-to/manage-system.md
     - GitHub Packages: how-to/use-github-packages.md

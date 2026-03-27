@@ -9,14 +9,16 @@ An **Agent Skill** is a packaged unit of capability for an AI Agent. It is defin
 -   **Portable**: Can be pushed to standard OCI registries.
 -   **Layered**: Deduplicated storage of content.
 
-## OCI Store
+## Skill Sources & Storage
 
-`skr` uses the **Open Container Initiative (OCI)** specifications for storage and distribution.
+`skr` considers **Git** the standard, common methodology for installing Agent Skills. You just point `skr install` at a public repository, and it handles the rest.
+
+Behind the scenes, `skr` utilizes the **Open Container Initiative (OCI)** specification for storage and local caching. When a skill is cloned from Git, `skr` automatically unpacks it locally into standard OCI formats:
 -   **Manifest**: Describes the skill content (config + layers).
 -   **Config**: Metadata about the skill (creation time, author, etc.).
 -   **Layers**: The actual file content (tar.gz).
 
-This compatibility allows `skr` to work with existing infrastructure like GitHub Packages (`ghcr.io`), Docker Hub, Harbor, etc.
+This underlying OCI architecture allows for seamless scaling: While Git is the common path, you can use remote OCI registries (like GitHub Packages `ghcr.io`, Docker Hub, or Harbor) as a "value add." Authors can publish pre-built artifacts to registries to accelerate downloads and freeze distributions for deployment environments, bypassing the need for git cloning entirely.
 
 ## The Global vs. Local Scope
 

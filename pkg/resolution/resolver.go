@@ -9,8 +9,8 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
-// PullFunc is a function that pulls a reference into the store.
-type PullFunc func(context.Context, string) error
+// PullFunc is a function that pulls a reference into the store and returns the resulting OCI reference.
+type PullFunc func(context.Context, string) (string, error)
 
 // Resolver handles dependency resolution for skills.
 type Resolver struct {
@@ -51,8 +51,9 @@ func (r *Resolver) Resolve(ctx context.Context, rootRef string) ([]string, error
 		if err != nil {
 			// Try pulling if configured
 			if r.puller != nil {
-				if pullErr := r.puller(ctx, currentRef); pullErr == nil {
-					// Retry resolve after pull
+				if newRef, pullErr := r.puller(ctx, currentRef); pullErr == nil {
+					// Retry resolve after pull with the new mapped local reference
+					currentRef = newRef
 					desc, err = r.store.Resolve(ctx, currentRef)
 				} else {
 					// Return original error wrapped with pull error context
