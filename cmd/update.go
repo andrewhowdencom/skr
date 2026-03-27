@@ -84,13 +84,13 @@ If a new digest is discovered (e.g., when a floating tag like :latest points to 
 
 		for _, ref := range skillsToUpdate {
 			slog.Info("updating skill", "ref", ref)
-			
+
 			// We force a pull so we pass the original ref, NOT combining with the lock digest
 			_, digest, err := action.InstallSkill(ctx, st, ref, installRoot, true)
 			if err != nil {
 				return fmt.Errorf("failed to update %s: %w", ref, err)
 			}
-			
+
 			lockFile.Skills[ref] = digest
 		}
 

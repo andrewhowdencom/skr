@@ -26,10 +26,10 @@ Use the `install` command to add a skill to your project. This will:
 2.  Update `.skr.yaml`.
 3.  Sync the skill content to `.agent/skills/`.
 
-Let's install a demo skill (assuming one is available in your registry or local store, e.g., `my-skill:v1`).
+Let's install a demo skill directly from a Git repository. `skr` uses Git as the primary pathway for distributing skills.
 
 ```bash
-skr install my-skill:v1
+skr install git+https://github.com/andrewhowdencom/skr-example-skill
 ```
 
 If successful, check your `.skr.yaml`:
@@ -38,7 +38,7 @@ If successful, check your `.skr.yaml`:
 agent:
   type: "custom"
 skills:
-  - "my-skill:v1"
+  - "git+https://github.com/andrewhowdencom/skr-example-skill"
 ```
 
 And verify the skill files were "hydration" into the project:

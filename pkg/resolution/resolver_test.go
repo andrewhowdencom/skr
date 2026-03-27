@@ -43,7 +43,7 @@ func TestResolve_PullMissing(t *testing.T) {
 
 	// Mock Puller
 	pullCalled := false
-	mockPuller := func(ctx context.Context, ref string) error {
+	mockPuller := func(ctx context.Context, ref string) (string, error) {
 		if ref == rootRef {
 			pullCalled = true
 			// Simulate pull by pushing to store
@@ -74,12 +74,15 @@ func TestResolve_PullMissing(t *testing.T) {
 			// If I can't check, I'll assume standard ORAS usage.
 			err := st.Push(ctx, manifestDesc, bytes.NewReader(manifestBytes))
 			if err != nil {
-				return err
+				return "", err
 			}
 			// Tag it
-			return st.Tag(ctx, manifestDesc, rootRef)
+			if err := st.Tag(ctx, manifestDesc, rootRef); err != nil {
+				return "", err
+			}
+			return rootRef, nil
 		}
-		return fmt.Errorf("unexpected pull for %s", ref)
+		return "", fmt.Errorf("unexpected pull for %s", ref)
 	}
 
 	// Create Resolver with Puller

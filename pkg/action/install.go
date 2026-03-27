@@ -10,9 +10,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/andrewhowdencom/skr/pkg/registry"
 	"github.com/andrewhowdencom/skr/pkg/resolution"
 	"github.com/andrewhowdencom/skr/pkg/skill"
+	"github.com/andrewhowdencom/skr/pkg/source"
 	"github.com/andrewhowdencom/skr/pkg/store"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -22,10 +22,18 @@ import (
 func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string, forcePull bool) (string, string, error) {
 	// 1. Resolve all dependencies
 	resolver := resolution.New(st)
-	resolver.SetPuller(func(ctx context.Context, ref string) error {
-		fmt.Printf("Pulling missing dependency %s...\n", ref)
-		_, err := registry.Pull(ctx, st, ref)
-		return err
+	resolver.SetPuller(func(ctx context.Context, depRef string) (string, error) {
+		fmt.Printf("Fetching missing dependency %s...\n", depRef)
+		parsedRef := source.ParseReference(depRef)
+		fetcher, err := source.GetFetcher(parsedRef)
+		if err != nil {
+			return "", fmt.Errorf("failed to get fetcher for %s: %w", depRef, err)
+		}
+		newRef, err := fetcher.Fetch(ctx, st, parsedRef)
+		if err != nil {
+			return "", err
+		}
+		return newRef.Path + ":" + newRef.Spec, nil
 	})
 
 	refs, err := resolver.Resolve(ctx, ref)
@@ -53,43 +61,47 @@ func InstallSkill(ctx context.Context, st *store.Store, ref, installDir string, 
 	return rootName, rootDigest, nil
 }
 
-func installOne(ctx context.Context, st *store.Store, ref, installDir string, forcePull bool) (string, string, error) {
+func installOne(ctx context.Context, st *store.Store, refStr, installDir string, forcePull bool) (string, string, error) {
 	// 1. Resolve Reference locally
-	desc, err := st.Resolve(ctx, ref)
+	desc, err := st.Resolve(ctx, refStr)
 	shouldPull := false
 
 	if err != nil {
-		// Not found locally?
 		shouldPull = true
 	} else if forcePull {
 		shouldPull = true
 	} else {
-		// Found locally. Check if we should update.
-		// For MVP, if tag is "latest", we assume we should pull?
-		// Or maybe we treat it as immutable unless --update is passed?
-		// User requested: "for :latest... pulling it first".
-		// Naive check for :latest suffix.
-		// NOTE: 'ref' might be fully qualified or short.
-		if len(ref) > 7 && ref[len(ref)-7:] == ":latest" {
+		if len(refStr) > 7 && refStr[len(refStr)-7:] == ":latest" {
 			shouldPull = true
 		}
 	}
 
 	if shouldPull {
-		fmt.Printf("Pulling %s...\n", ref)
-		var pullDesc ocispec.Descriptor
-		var pullErr error
-		if pullDesc, pullErr = registry.Pull(ctx, st, ref); pullErr != nil {
-			// If pull fails:
-			// 1. If we have local copy, maybe warn and use it?
-			// 2. If no local copy, fail.
-			if desc.Digest != "" { // We had a local copy
-				fmt.Printf("Warning: Failed to pull latest (using local copy): %v\n", pullErr)
+		fmt.Printf("Fetching %s...\n", refStr)
+		parsedRef := source.ParseReference(refStr)
+		fetcher, err := source.GetFetcher(parsedRef)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to initialize fetcher for %s: %w", refStr, err)
+		}
+
+		newRef, fetchErr := fetcher.Fetch(ctx, st, parsedRef)
+		if fetchErr != nil {
+			if desc.Digest != "" {
+				fmt.Printf("Warning: Failed to fetch latest (using local copy): %v\n", fetchErr)
 			} else {
-				return "", "", fmt.Errorf("failed to pull %s: %w", ref, pullErr)
+				return "", "", fmt.Errorf("failed to fetch %s: %w", refStr, fetchErr)
 			}
 		} else {
-			desc = pullDesc
+			// Resolve the newly produced artifact from the store
+			resolveStr := newRef.Path
+			if newRef.Spec != "" {
+				resolveStr += ":" + newRef.Spec
+			}
+			newDesc, resolveErr := st.Resolve(ctx, resolveStr)
+			if resolveErr != nil {
+				return "", "", fmt.Errorf("failed to resolve newly fetched artifact %s: %w", resolveStr, resolveErr)
+			}
+			desc = newDesc
 		}
 	}
 
@@ -98,7 +110,7 @@ func installOne(ctx context.Context, st *store.Store, ref, installDir string, fo
 	if err != nil {
 		return "", "", fmt.Errorf("failed to fetch manifest: %w", err)
 	}
-	defer manifestReader.Close()
+	defer func() { _ = manifestReader.Close() }()
 
 	manifestBytes, err := io.ReadAll(manifestReader)
 	if err != nil {
@@ -121,14 +133,14 @@ func installOne(ctx context.Context, st *store.Store, ref, installDir string, fo
 	if err != nil {
 		return "", "", fmt.Errorf("failed to fetch layer: %w", err)
 	}
-	defer layerReader.Close()
+	defer func() { _ = layerReader.Close() }()
 
 	// 4. Unpack Layer to Temp
 	tempDir, err := os.MkdirTemp("", "skr-install-*")
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create temp dir: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	if err := unpackLayer(layerReader, tempDir); err != nil {
 		return "", "", fmt.Errorf("failed to unpack layer: %w", err)
@@ -171,7 +183,7 @@ func unpackLayer(r io.Reader, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer gzr.Close()
+	defer func() { _ = gzr.Close() }()
 
 	tr := tar.NewReader(gzr)
 
@@ -235,13 +247,13 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	out, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	if _, err := io.Copy(out, in); err != nil {
 		return err

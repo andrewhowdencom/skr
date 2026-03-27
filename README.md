@@ -6,11 +6,9 @@
 
 ## Goal
 
-The primary goal of **skr** is to enable the pushing, pulling, and maintenance of Agent Skills using OCI (Open Container Initiative) Image registries, similar to the workflow used for container images on platforms like GitHub or Docker Hub.
+The primary goal of **skr** is to enable developers to natively install and manage Agent Skills directly from standard Git repositories. Under the hood, `skr` automatically creates OCI (Open Container Initiative) artifacts locally, allowing you to optionally leverage standard OCI registries for faster, pre-built distribution of your skills across environments like GitHub Packages or Docker Hub.
 
-This allows for a standardized, versioned, and distributed ecosystem for sharing AI capabilities.
-
-This allows for a standardized, versioned, and distributed ecosystem for sharing AI capabilities.
+By positioning Git as the primary distribution method and OCI as an enhanced performance layer, `skr` fosters a standardized, versioned, and easily accessible ecosystem for sharing AI capabilities.
 
 ## Agent Skills
 
@@ -87,11 +85,17 @@ skr build . -t my-registry.com/my-skill:v1.0.0
 # Push a skill to a registry
 skr push my-registry.com/my-skill:v1.0.0
 
-# Install a skill
-skr install my-registry.com/my-skill:v1.0.0
+# Install a skill from a Git repository (default)
+skr install git+https://github.com/andrewhowdencom/skr-example-skill
+
+# Install a skill from a local directory (development)
+skr install file://./my-skill
+
+# Install a pre-built skill from an OCI registry (fast path)
+skr install oci://ghcr.io/user/skill:v1.0.0
 
 # Remove an installed skill
-skr rm my-registry.com/my-skill
+skr rm git+https://github.com/andrewhowdencom/skr-example-skill
 
 # Inspect a remote skill
 skr inspect my-registry.com/my-skill:v1.0.0

@@ -66,11 +66,15 @@ You'll see metadata including the size, digest, and creation time.
 
 ## 4. Install the Skill
 
-Install the skill to your agent configuration.
+Install the skill to your agent configuration. Since we just authored the skill locally, we can install it directly from the directory using the `file://` schema:
 
 ```bash
-skr install my-skill:v1
+skr install file://./my-skill
 ```
+
+This updates your `.skr.yaml` and synchronizes the skill to `.agent/skills`.
+
+> **Note**: For sharing with others, you would typically push your skill folder to a Git repository, and others would install it directly via Git (e.g., `skr install https://github.com/your-username/my-skill`).
 
 This updates your `.skr.yaml` and synchronizes the skill to `.agent/skills`.
 

@@ -118,12 +118,12 @@ If --global is set, installs to the global configuration.`,
 		if !isGlobal {
 			lockFilePath = filepath.Join(filepath.Dir(configFilePath), config.AltLockFileName)
 		}
-		
+
 		lockFile, err := config.LoadLock(lockFilePath)
 		if err != nil {
 			return fmt.Errorf("failed to load lock file: %w", err)
 		}
-		
+
 		lockFile.Skills[ref] = digest
 		if err := lockFile.SaveTo(lockFilePath); err != nil {
 			return fmt.Errorf("failed to save lock file: %w", err)
