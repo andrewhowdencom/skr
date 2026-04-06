@@ -1,6 +1,6 @@
 site_name: Agent Skills Registry (skr)
 site_description: CLI for managing and distributing Agent Skills
-site_url: https://andrewhowdencom.github.io/skr/
+site_url: https://dox.lahb.work/
 
 theme:
   name: material
