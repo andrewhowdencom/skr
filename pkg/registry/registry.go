@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	skrauth "github.com/andrewhowdencom/skr/pkg/auth"
 	"github.com/andrewhowdencom/skr/pkg/store"
@@ -31,13 +32,19 @@ func Push(ctx context.Context, st *store.Store, ref string) error {
 	// Here we wrap the base transport to see network calls.
 	baseTransport := otelhttp.NewTransport(http.DefaultTransport)
 	retryTransport := retry.NewTransport(baseTransport)
+	retryTransport.Policy = func() retry.Policy {
+		return &retry.GenericPolicy{
+			Retryable: retry.DefaultPredicate,
+			Backoff:   retry.DefaultBackoff,
+			MinWait:   100 * time.Millisecond,
+			MaxWait:   1 * time.Second,
+			MaxRetry:  2,
+		}
+	}
 	httpClient := &http.Client{
 		Transport: retryTransport,
 	}
 
-	// Find credentials for the registry
-	// ORAS client automatically uses the credential store helper if configured.
-	// We inject our custom store backed by keyring.
 	repo.Client = &auth.Client{
 		Client:     httpClient,
 		Cache:      auth.DefaultCache,
@@ -74,6 +81,15 @@ func Pull(ctx context.Context, st *store.Store, ref string) (ocispec.Descriptor,
 
 	baseTransport := otelhttp.NewTransport(http.DefaultTransport)
 	retryTransport := retry.NewTransport(baseTransport)
+	retryTransport.Policy = func() retry.Policy {
+		return &retry.GenericPolicy{
+			Retryable: retry.DefaultPredicate,
+			Backoff:   retry.DefaultBackoff,
+			MinWait:   100 * time.Millisecond,
+			MaxWait:   1 * time.Second,
+			MaxRetry:  2,
+		}
+	}
 	httpClient := &http.Client{
 		Transport: retryTransport,
 	}
