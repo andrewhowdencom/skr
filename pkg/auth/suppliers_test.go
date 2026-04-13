@@ -18,6 +18,7 @@ ghcr.io:
   password: "testpassword"
 docker.io:
   token: "testtoken"
+  refresh_token: "testrefresh"
 `
 	tmpdb, err := os.CreateTemp("", "auth-*.yaml")
 	require.NoError(t, err)
@@ -56,6 +57,7 @@ docker.io:
 		require.NotNil(t, cred)
 
 		assert.Equal(t, "testtoken", cred.Token)
+		assert.Equal(t, "testrefresh", cred.RefreshToken)
 
 		// Verify Authenticator creation
 		auth := AuthenticatorFromCredential(cred)
