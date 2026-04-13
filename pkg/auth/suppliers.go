@@ -35,9 +35,10 @@ type YAMLFileProvider struct {
 }
 
 type yamlCreds struct {
-	Username string `yaml:"username,omitempty"`
-	Password string `yaml:"password,omitempty"`
-	Token    string `yaml:"token,omitempty"`
+	Username     string `yaml:"username,omitempty"`
+	Password     string `yaml:"password,omitempty"`
+	Token        string `yaml:"token,omitempty"`
+	RefreshToken string `yaml:"refresh_token,omitempty"`
 }
 
 func (s *YAMLFileProvider) Get(ctx context.Context, serverAddress string) (*Credential, error) {
@@ -56,13 +57,16 @@ func (s *YAMLFileProvider) Get(ctx context.Context, serverAddress string) (*Cred
 		return nil, fmt.Errorf("no credentials found for %s in %s", serverAddress, s.Path)
 	}
 
-	// Prefer Token if available, else User/Pass
-	if creds.Token != "" {
-		return &Credential{Token: creds.Token}, nil
+	// Return all fields, allowing ORAS to handle mutual exclusion if necessary
+	cred := &Credential{
+		Username:     creds.Username,
+		Password:     creds.Password,
+		Token:        creds.Token,
+		RefreshToken: creds.RefreshToken,
 	}
 
-	if creds.Username != "" && creds.Password != "" {
-		return &Credential{Username: creds.Username, Password: creds.Password}, nil
+	if cred.Token != "" || cred.RefreshToken != "" || (cred.Username != "" && cred.Password != "") {
+		return cred, nil
 	}
 
 	return nil, fmt.Errorf("incomplete credentials for %s", serverAddress)

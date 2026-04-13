@@ -31,7 +31,6 @@ func (s *Store) Get(ctx context.Context, serverAddress string) (auth.Credential,
 	chain := &ChainProvider{
 		Providers: []CredentialProvider{
 			&DefaultYAMLProvider{},
-			&DockerProvider{},
 			&KeyringProvider{},
 			&LegacyJSONProvider{},
 		},

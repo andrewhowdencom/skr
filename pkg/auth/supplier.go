@@ -6,9 +6,10 @@ import (
 
 // Credential holds authentication data.
 type Credential struct {
-	Username string
-	Password string
-	Token    string
+	Username     string
+	Password     string
+	Token        string
+	RefreshToken string
 }
 
 // CredentialProvider retrieves credentials for a specific server.
